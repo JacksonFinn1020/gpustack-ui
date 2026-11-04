@@ -162,6 +162,19 @@ export default {
   'models.logs.pagination.first': 'İlk Sayfa',
   'models.logs.pagination.jump': 'Sayfaya Git',
   'models.form.localPath': 'Yerel Yol',
+  'models.form.tos': 'TOS',
+  'models.form.tos.endpoint': 'TOS Endpoint',
+  'models.form.tos.region': 'Bölge',
+  'models.form.tos.bucket': 'Bucket',
+  'models.form.tos.model': 'Model Kimliği',
+  'models.form.tos.version': 'Sürüm',
+  'models.form.tos.releasePath': 'Sürüm yolu',
+  'models.form.tos.ingestPath': 'Sunucudaki yerel dizin',
+  'models.form.tos.ingestPath.tips':
+    'İsteğe bağlı. GPUStack sunucusundaki bir dizini (veya diskteki anlık görüntüyü) TOS sürümü olarak yayımlar. Kimlik bilgileri yalnızca sunucu TOS_* ortam değişkenlerindedir — erişim anahtarı girmeyin.',
+  'models.form.tos.ingest': 'TOS’a yükle',
+  'models.form.tos.ingest.success':
+    'Sürüm yüklendi. Alanları kontrol edip dağıtın.',
   'models.form.filePath': 'Model Yolu',
   'models.form.backendVersion': 'Altyapı Sürümü',
   'models.form.backendVersion.tips':

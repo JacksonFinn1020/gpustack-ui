@@ -67,7 +67,8 @@ for (const file of [
   'custom-backend',
   'local-path-source',
   'mode-field',
-  'online-source'
+  'online-source',
+  'tos-source'
 ]) {
   mock.module(new URL(`../${file}.tsx`, import.meta.url).href, {
     defaultExport: empty

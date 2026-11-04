@@ -165,6 +165,19 @@ export default {
   'models.logs.pagination.first': 'Первая страница',
   'models.logs.pagination.jump': 'Перейти к странице',
   'models.form.localPath': 'Локальный путь',
+  'models.form.tos': 'TOS',
+  'models.form.tos.endpoint': 'TOS Endpoint',
+  'models.form.tos.region': 'Регион',
+  'models.form.tos.bucket': 'Бакет',
+  'models.form.tos.model': 'ID модели',
+  'models.form.tos.version': 'Версия',
+  'models.form.tos.releasePath': 'Путь релиза',
+  'models.form.tos.ingestPath': 'Локальный каталог на сервере',
+  'models.form.tos.ingestPath.tips':
+    'Необязательно. Каталог на сервере GPUStack (или снимок на диске) для публикации как релиз TOS. Учётные данные берутся только из переменных окружения TOS_* — не вводите ключи доступа.',
+  'models.form.tos.ingest': 'Загрузить в TOS',
+  'models.form.tos.ingest.success':
+    'Релиз загружен. Проверьте поля и выполните развёртывание.',
   'models.form.filePath': 'Путь к модели',
   'models.form.backendVersion': 'Версия бэкенда',
   'models.form.backendVersion.tips':

@@ -165,6 +165,19 @@ export default {
   'models.logs.pagination.first': '最初のページ',
   'models.logs.pagination.jump': '指定ページへ移動',
   'models.form.localPath': 'ローカルパス',
+  'models.form.tos': 'TOS',
+  'models.form.tos.endpoint': 'TOS エンドポイント',
+  'models.form.tos.region': 'リージョン',
+  'models.form.tos.bucket': 'バケット',
+  'models.form.tos.model': 'モデル ID',
+  'models.form.tos.version': 'バージョン',
+  'models.form.tos.releasePath': 'リリースパス',
+  'models.form.tos.ingestPath': 'サーバー上のローカルディレクトリ',
+  'models.form.tos.ingestPath.tips':
+    '任意。GPUStack サーバー上のディレクトリ（またはディスク上のスナップショット）を TOS リリースとして公開します。認証情報はサーバーの TOS_* 環境変数のみを使用し、アクセスキーは入力しないでください。',
+  'models.form.tos.ingest': 'TOS に取り込み',
+  'models.form.tos.ingest.success':
+    'リリースを取り込みました。内容を確認してデプロイしてください。',
   'models.form.filePath': 'モデルパス',
   'models.form.backendVersion': 'バックエンドバージョン',
   'models.form.backendVersion.tips':

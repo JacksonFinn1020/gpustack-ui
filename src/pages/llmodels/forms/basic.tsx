@@ -24,6 +24,7 @@ import CustomBackend from './custom-backend';
 import LocalPathSource from './local-path-source';
 import ModeField from './mode-field';
 import OnlineSource from './online-source';
+import TosSource from './tos-source';
 
 interface BasicFormProps {
   /**
@@ -270,6 +271,7 @@ const BasicForm: React.FC<BasicFormProps> = (props) => {
       </Form.Item>
       <OnlineSource></OnlineSource>
       <LocalPathSource></LocalPathSource>
+      <TosSource></TosSource>
       <Form.Item<FormData>
         name="cluster_id"
         rules={[

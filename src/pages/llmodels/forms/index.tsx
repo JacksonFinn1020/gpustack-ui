@@ -27,6 +27,7 @@ import {
   ScheduleValueMap
 } from '../config';
 import { FormContext } from '../config/form-context';
+import { stripTosUiFields } from '../config/tos';
 import {
   BackendOption,
   ClusterOption,
@@ -385,6 +386,7 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
   const segmentedTop = useMemo(() => {
     if (
       modelSourceMap.local_path_value === source ||
+      modelSourceMap.tos_value === source ||
       action === PageAction.EDIT ||
       formKey === DeployFormKeyMap.CATALOG
     ) {
@@ -516,12 +518,12 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
       }));
     }
     const gpuSelector = generateGPUIds(data);
-    const allValues = {
+    const allValues = stripTosUiFields({
       // `pdMode` joins the UI-only pair: it says which Segmented state is
       // selected, while `disaggregation` is what carries the intent.
       ..._.omit(data, ['scheduleType', 'manualGpuMode', 'pdMode']),
       ...gpuSelector
-    };
+    });
     // A group left on "same as model" submits its fields as null, which is the
     // wire's word for inherit — so the transform is what makes the form's shape
     // and the payload's shape the same. `null` rather than `[]` for no roles:
