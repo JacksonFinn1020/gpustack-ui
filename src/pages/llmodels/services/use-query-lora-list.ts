@@ -34,6 +34,9 @@ const sourceLabel = (source: string) => {
   if (source === modelSourceMap.local_path_value) {
     return modelSourceMap.local_path;
   }
+  if (source === modelSourceMap.tos_value) {
+    return modelSourceMap.tos;
+  }
   return source;
 };
 

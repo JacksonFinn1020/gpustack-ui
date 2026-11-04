@@ -145,6 +145,12 @@ export interface ModelFile {
   model_scope_file_path: string;
   local_path: string;
   local_dir: string;
+  tos_endpoint?: string;
+  tos_region?: string;
+  tos_bucket?: string;
+  tos_model?: string;
+  tos_version?: string;
+  tos_release_path?: string;
   worker_id: number;
   owner_principal_id?: number | null;
   size: number;

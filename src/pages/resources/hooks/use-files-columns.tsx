@@ -176,6 +176,18 @@ const getModelInfo = (record: ListItem) => {
     };
   }
 
+  if (record.source === modelSourceMap.tos_value) {
+    const release =
+      record.tos_release_path ||
+      [record.tos_model, record.tos_version].filter(Boolean).join(':');
+    return {
+      source: `${source}/${release}`,
+      repo_id: record.tos_model,
+      title: release,
+      filename: record.tos_model
+    };
+  }
+
   return {
     source: `${source}${record.local_path}`,
     repo_id: record.local_path,

@@ -162,6 +162,19 @@ export default {
   'models.logs.pagination.first': 'First Page',
   'models.logs.pagination.jump': 'Go to Page',
   'models.form.localPath': 'Local Path',
+  'models.form.tos': 'TOS',
+  'models.form.tos.endpoint': 'TOS Endpoint',
+  'models.form.tos.region': 'Region',
+  'models.form.tos.bucket': 'Bucket',
+  'models.form.tos.model': 'Model ID',
+  'models.form.tos.version': 'Version',
+  'models.form.tos.releasePath': 'Release Path',
+  'models.form.tos.ingestPath': 'Server local directory',
+  'models.form.tos.ingestPath.tips':
+    'Optional. Directory on the GPUStack server (or an on-disk snapshot) to publish as a TOS release. Credentials stay on the server as TOS_* environment variables — do not enter access keys here.',
+  'models.form.tos.ingest': 'Ingest to TOS',
+  'models.form.tos.ingest.success':
+    'Release ingested. Review the fields and deploy.',
   'models.form.filePath': 'Model Path',
   'models.form.backendVersion': 'Backend Version',
   'models.form.backendVersion.tips':

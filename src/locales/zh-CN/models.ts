@@ -156,6 +156,18 @@ export default {
   'models.logs.pagination.first': '第一页',
   'models.logs.pagination.jump': '跳转到指定页',
   'models.form.localPath': '本地路径',
+  'models.form.tos': 'TOS',
+  'models.form.tos.endpoint': 'TOS Endpoint',
+  'models.form.tos.region': '区域',
+  'models.form.tos.bucket': 'Bucket',
+  'models.form.tos.model': '模型 ID',
+  'models.form.tos.version': '版本',
+  'models.form.tos.releasePath': 'Release 路径',
+  'models.form.tos.ingestPath': '服务器本地目录',
+  'models.form.tos.ingestPath.tips':
+    '可选。将 GPUStack 服务器上的目录（或已下载的快照）发布为 TOS release。凭证只使用服务器 TOS_* 环境变量，请勿在此填写访问密钥。',
+  'models.form.tos.ingest': '上传到 TOS',
+  'models.form.tos.ingest.success': '已写入 TOS，请确认字段后部署。',
   'models.form.filePath': '模型路径',
   'models.form.backendVersion': '后端版本',
   'models.form.backendVersion.tips':

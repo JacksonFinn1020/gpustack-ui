@@ -110,6 +110,8 @@ interface ModelSource {
   local_path: string;
   local_path_value: string;
   model_scope: string;
+  tos: string;
+  tos_value: string;
 }
 
 export const modelSourceMap: ModelSource = {
@@ -121,14 +123,17 @@ export const modelSourceMap: ModelSource = {
   modelscope_value: 'model_scope',
   model_scope: 'ModelScope',
   local_path: 'Local Path',
-  local_path_value: 'local_path'
+  local_path_value: 'local_path',
+  tos: 'TOS',
+  tos_value: 'tos'
 };
 
 export const modelSourceValueMap = {
   [modelSourceMap.huggingface_value]: modelSourceMap.huggingface,
   [modelSourceMap.ollama_library_value]: modelSourceMap.ollama_library,
   [modelSourceMap.modelscope_value]: modelSourceMap.modelScope,
-  [modelSourceMap.local_path_value]: modelSourceMap.local_path
+  [modelSourceMap.local_path_value]: modelSourceMap.local_path,
+  [modelSourceMap.tos_value]: modelSourceMap.tos
 };
 
 export const sourceOptions = [
@@ -147,6 +152,12 @@ export const sourceOptions = [
     locale: true,
     value: modelSourceMap.local_path_value,
     key: 'local_path'
+  },
+  {
+    label: 'models.form.tos',
+    locale: true,
+    value: modelSourceMap.tos_value,
+    key: 'tos'
   }
 ];
 

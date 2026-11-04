@@ -6,6 +6,7 @@ import {
   modelSourceMap,
   MyModelsStatusValueMap
 } from './index';
+import { formatTosSource } from './tos';
 
 export const modalConfig: Record<
   string,
@@ -25,6 +26,11 @@ export const modalConfig: Record<
     show: true,
     width: 600,
     source: modelSourceMap.local_path_value
+  },
+  [modelSourceMap.tos_value]: {
+    show: true,
+    width: 600,
+    source: modelSourceMap.tos_value
   }
 };
 
@@ -87,6 +93,14 @@ export const onLineSourceOptions = [
   }
 ];
 
+const tosSourceOption = {
+  label: 'models.form.tos',
+  locale: true,
+  value: modelSourceMap.tos_value,
+  key: modelSourceMap.tos_value,
+  icon: icons.DownloadOutlined
+};
+
 export const sourceOptions = [
   {
     label: 'menu.models.modelCatalog',
@@ -96,6 +110,7 @@ export const sourceOptions = [
     icon: icons.Catalog
   },
   ...onLineSourceOptions,
+  tosSourceOption,
   {
     // A noun, like every other entry here: the dropdown names where the
     // deployment comes from, not what is done to it.
@@ -119,6 +134,9 @@ export const generateSource = (record: any) => {
   }
   if (record.source === modelSourceMap.ollama_library_value) {
     return `${modelSourceMap.ollama_library}/${record.ollama_library_model_name}`;
+  }
+  if (record.source === modelSourceMap.tos_value) {
+    return formatTosSource(record);
   }
   return '';
 };

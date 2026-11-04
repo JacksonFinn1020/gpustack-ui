@@ -137,6 +137,19 @@ const ModelFiles = () => {
         model_scope_file_path: record.model_scope_file_path
       };
     }
+
+    if (record.source === modelSourceMap.tos_value) {
+      return {
+        source: modelSourceMap.tos_value,
+        tos_endpoint: record.tos_endpoint,
+        tos_region: record.tos_region,
+        tos_bucket: record.tos_bucket,
+        tos_model: record.tos_model,
+        tos_version: record.tos_version,
+        tos_release_path: record.tos_release_path
+      };
+    }
+
     return {
       source: modelSourceMap.local_path_value,
       local_path: record.resolved_paths?.[0]
@@ -155,6 +168,7 @@ const ModelFiles = () => {
         record.huggingface_repo_id ||
           record.ollama_library_model_name ||
           record.model_scope_model_id ||
+          record.tos_model ||
           record.local_path,
         /[\\/]/
       ).pop()
@@ -207,10 +221,15 @@ const ModelFiles = () => {
         saveScrollHeight();
 
         const initialValues = generateInitialValues(record, []);
+        const source = (initialValues.source ||
+          modelSourceMap.local_path_value) as SourceType;
+        const config = modalConfig[source];
         setOpenDeployModal({
           ...openDeployModal,
           initialValues: initialValues,
           isGGUF: initialValues.isGGUF,
+          source,
+          width: config?.width || 600,
           show: true
         });
       }
