@@ -116,7 +116,7 @@ export const mergeTosSourceFields = (remote?: TosSourceField[]) => {
   const localByName = new Map(
     tosSourceFields.map((field) => [field.name, field])
   );
-  return remote.map((field) => {
+  const merged = remote.map((field) => {
     const local = localByName.get(field.name);
     return {
       ...field,
@@ -124,6 +124,28 @@ export const mergeTosSourceFields = (remote?: TosSourceField[]) => {
       placeholder: field.placeholder || local?.placeholder
     };
   });
+  const remoteNames = new Set(remote.map((field) => field.name));
+  return [
+    ...merged,
+    ...tosSourceFields.filter((field) => !remoteNames.has(field.name))
+  ];
+};
+
+export const buildTosIngestRequest = (
+  values: Record<string, any>
+): TosIngestRequest => {
+  const request: TosIngestRequest = {
+    local_path: values.tos_ingest_local_path || '',
+    tos_endpoint: values.tos_endpoint || '',
+    tos_region: values.tos_region || '',
+    tos_bucket: values.tos_bucket || '',
+    tos_model: values.tos_model || '',
+    tos_version: values.tos_version || ''
+  };
+  if (values.tos_release_path) {
+    request.tos_release_path = values.tos_release_path;
+  }
+  return request;
 };
 
 export const formatTosSource = (record: {

@@ -6,6 +6,7 @@ import { ingestTosRelease, queryTosSources } from '../apis';
 import { DeployFormKeyMap, modelSourceMap } from '../config';
 import { useFormContext } from '../config/form-context';
 import {
+  buildTosIngestRequest,
   mergeTosSourceFields,
   TOS_REQUIRED_FIELDS,
   TosSourceField,
@@ -20,6 +21,7 @@ const TosSourceForm: React.FC = () => {
   const { formKey, onValuesChange } = useFormContext();
   const source = Form.useWatch('source', form);
   const [fields, setFields] = useState<TosSourceField[]>(tosSourceFields);
+  const [allowIngest, setAllowIngest] = useState(true);
   const [ingesting, setIngesting] = useState(false);
   const sessionRef = useRef(0);
 
@@ -37,10 +39,15 @@ const TosSourceForm: React.FC = () => {
         if (sessionRef.current !== session) {
           return;
         }
-        const item = res.items?.find(
+        const item = res?.items?.find(
           (entry) => entry.source === modelSourceMap.tos_value
         );
         setFields(mergeTosSourceFields(item?.fields));
+        if (item && item.ingest === false) {
+          setAllowIngest(false);
+        } else {
+          setAllowIngest(true);
+        }
       })
       .catch(() => {
         // Keep the hardcoded TOS_SOURCE_FIELDS mirror when the endpoint
@@ -74,15 +81,7 @@ const TosSourceForm: React.FC = () => {
     }
     setIngesting(true);
     try {
-      const result = await ingestTosRelease({
-        local_path: values.tos_ingest_local_path || '',
-        tos_endpoint: values.tos_endpoint || '',
-        tos_region: values.tos_region || '',
-        tos_bucket: values.tos_bucket || '',
-        tos_model: values.tos_model || '',
-        tos_version: values.tos_version || '',
-        tos_release_path: values.tos_release_path || null
-      });
+      const result = await ingestTosRelease(buildTosIngestRequest(values));
       form.setFieldsValue({
         tos_endpoint: result.tos_endpoint,
         tos_region: result.tos_region,
@@ -128,29 +127,33 @@ const TosSourceForm: React.FC = () => {
           ></CInput.Input>
         </Form.Item>
       ))}
-      <Form.Item<FormData>
-        name="tos_ingest_local_path"
-        key="tos_ingest_local_path"
-      >
-        <CInput.Input
-          allowClear
-          label={intl.formatMessage({ id: 'models.form.tos.ingestPath' })}
-          placeholder="/data/snapshots/qwen3"
-          description={intl.formatMessage({
-            id: 'models.form.tos.ingestPath.tips'
-          })}
-        ></CInput.Input>
-      </Form.Item>
-      <Form.Item>
-        <Button
-          type="default"
-          htmlType="button"
-          loading={ingesting}
-          onClick={handleIngest}
-        >
-          {intl.formatMessage({ id: 'models.form.tos.ingest' })}
-        </Button>
-      </Form.Item>
+      {allowIngest && (
+        <>
+          <Form.Item<FormData>
+            name="tos_ingest_local_path"
+            key="tos_ingest_local_path"
+          >
+            <CInput.Input
+              allowClear
+              label={intl.formatMessage({ id: 'models.form.tos.ingestPath' })}
+              placeholder="/data/snapshots/qwen3"
+              description={intl.formatMessage({
+                id: 'models.form.tos.ingestPath.tips'
+              })}
+            ></CInput.Input>
+          </Form.Item>
+          <Form.Item>
+            <Button
+              type="default"
+              htmlType="button"
+              loading={ingesting}
+              onClick={handleIngest}
+            >
+              {intl.formatMessage({ id: 'models.form.tos.ingest' })}
+            </Button>
+          </Form.Item>
+        </>
+      )}
     </>
   );
 };

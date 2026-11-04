@@ -90,15 +90,16 @@ export const onLineSourceOptions = [
     value: modelSourceMap.local_path_value,
     key: modelSourceMap.local_path_value,
     icon: icons.LocalPath
-  },
-  {
-    label: 'models.form.tos',
-    locale: true,
-    value: modelSourceMap.tos_value,
-    key: modelSourceMap.tos_value,
-    icon: icons.DownloadOutlined
   }
 ];
+
+const tosSourceOption = {
+  label: 'models.form.tos',
+  locale: true,
+  value: modelSourceMap.tos_value,
+  key: modelSourceMap.tos_value,
+  icon: icons.DownloadOutlined
+};
 
 export const sourceOptions = [
   {
@@ -109,6 +110,7 @@ export const sourceOptions = [
     icon: icons.Catalog
   },
   ...onLineSourceOptions,
+  tosSourceOption,
   {
     // A noun, like every other entry here: the dropdown names where the
     // deployment comes from, not what is done to it.

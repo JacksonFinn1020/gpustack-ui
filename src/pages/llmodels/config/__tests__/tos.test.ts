@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  buildTosIngestRequest,
   formatTosSource,
   hasTosCoordinates,
   mergeTosSourceFields,
@@ -63,5 +64,25 @@ test('mergeTosSourceFields keeps i18n labels for known names', () => {
   ]);
   assert.equal(merged[0].label, 'models.form.tos.endpoint');
   assert.equal(merged[0].placeholder, 'https://example.com');
+  assert.equal(merged.length, tosSourceFields.length);
   assert.equal(tosSourceFields.length, 6);
+});
+
+test('buildTosIngestRequest omits empty release path and never sends keys', () => {
+  const request = buildTosIngestRequest({
+    tos_ingest_local_path: '/data/snapshots/qwen3',
+    tos_endpoint: 'https://tos-cn-shanghai.volces.com',
+    tos_region: 'cn-shanghai',
+    tos_bucket: 'bucket',
+    tos_model: 'qwen3',
+    tos_version: 'v1',
+    tos_release_path: '',
+    tos_access_key: 'should-not-exist'
+  });
+  assert.equal(request.local_path, '/data/snapshots/qwen3');
+  assert.equal(request.tos_release_path, undefined);
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(request, 'tos_access_key'),
+    false
+  );
 });
