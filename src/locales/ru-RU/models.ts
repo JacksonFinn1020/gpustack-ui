@@ -196,7 +196,19 @@ export default {
   'models.form.tos.archive.paths.tips':
     'Пустое значение архивирует весь READY-каталог. Выберите относительные пути из списка READY-файлов (включая вложенные GGUF). Абсолютные пути отклоняются.',
   'models.form.tos.archive.paths.directoryOnly':
-    'В resolved_paths этого READY-кэша только каталог, поэтому вложенные файлы выбрать нельзя. Архивируйте весь каталог или дождитесь API списка относительных файлов. Не вводите basename или абсолютный путь.',
+    'Для этого READY-кэша вложенные файлы не вернулись. Пустое значение архивирует весь каталог. Не вводите basename или локальный путь.',
+  'models.form.tos.archive.files.loading':
+    'Загрузка относительных файлов через GET /v2/model-files/{id}/files. UI не вызывает worker API и не передаёт локальный путь.',
+  'models.form.tos.archive.files.truncated':
+    'Список файлов обрезан (лимит сканирования 5000, perPage ≤ 200). Это не полный каталог. pagination.total — только число записей на этой странице.',
+  'models.form.tos.archive.files.not_ready':
+    'Файл модели ещё не READY (422 not_ready). Вложенные файлы недоступны. После READY можно архивировать весь каталог.',
+  'models.form.tos.archive.files.worker_unreachable':
+    'Назначенный worker недоступен (503 worker_unreachable). Вложенные файлы не перечислены. Это не пустой успех.',
+  'models.form.tos.archive.files.cache_missing':
+    'READY-кэш отсутствует на worker (422 cache_missing). Вложенные файлы не перечислены.',
+  'models.form.tos.archive.files.path_escape':
+    'Список содержит небезопасный путь (422 path_escape). Вложенные файлы не перечислены.',
   'models.form.tos.archive.uniqueRetry':
     'Для этой пары connection/model/version уже есть задача архива. Повторите её, не создавайте новую.',
   'models.form.tos.archive.versionRetryRequired':

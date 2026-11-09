@@ -1,6 +1,7 @@
 import { modelsExpandKeysAtom } from '@/atoms/models';
 import { PageAction } from '@/config';
 import { PaginationKey, TABLE_SORT_DIRECTIONS } from '@/config/settings';
+import { useActingOrganizationId } from '@/hooks/use-acting-organization-id';
 import useTableFetch from '@/hooks/use-table-fetch';
 import PageBox from '@/pages/_components/page-box';
 import { createModel } from '@/pages/llmodels/apis';
@@ -38,7 +39,7 @@ import { useMemoizedFn } from 'ahooks';
 import { ConfigProvider, Table, message } from 'antd';
 import { useAtom } from 'jotai';
 import _ from 'lodash';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   MODEL_FILES_API,
   deleteModelFile,
@@ -82,6 +83,7 @@ const ModelFiles = () => {
     watch: true,
     contentForDelete: 'resources.modelfiles.modelfile'
   });
+  const actingOrganizationId = useActingOrganizationId();
   const intl = useIntl();
   const { showSuccess } = useAppUtils();
   const [downloadModalStatus, setDownlaodMoalStatus] = useState<{
@@ -305,6 +307,21 @@ const ModelFiles = () => {
   const [archiveJobs, setArchiveJobs] = useState<
     Record<number, TosArchiveJobPublic>
   >({});
+  const previousOrgId = useRef<number | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (previousOrgId.current === undefined) {
+      previousOrgId.current = actingOrganizationId;
+      return;
+    }
+    if (previousOrgId.current === actingOrganizationId) {
+      return;
+    }
+    previousOrgId.current = actingOrganizationId;
+    setArchiveModal({ open: false, record: null });
+    setArchiveJobs({});
+    fetchData();
+  }, [actingOrganizationId]);
 
   useEffect(() => {
     const tracked = (dataSource.dataList || []).filter(

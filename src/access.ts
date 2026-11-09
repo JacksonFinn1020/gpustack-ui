@@ -1,9 +1,17 @@
+import {
+  isTrustedOrgOwner,
+  MyOrganization,
+  readStoredCurrentOrganizationId,
+  readStoredMyOrganizations
+} from '@/utils/org-context';
 import { applyAccessExtensions } from './access.extensions';
 
 export default (initialState: {
   currentUser?: Global.UserInfo;
   hasKubernetesCluster?: boolean;
   hasResourceEvents?: boolean;
+  myOrganizations?: MyOrganization[];
+  currentOrganizationId?: number | null;
 }) => {
   const isPlatformAdmin = !!(
     initialState &&
@@ -30,8 +38,11 @@ export default (initialState: {
   //   * `canSeeAdmin` — strictly platform admin (`users.is_admin`).
   //     Gates Users.
   //   * `canSeeOrgAdmin` — admin-style menus that work cross-org
-  //     (Dashboard, Resources, Models, Cluster Management). Defaults
-  //     to platform admin; extensions widen to include org admins.
+  //     (Dashboard, Resources, Models, Cluster Management, TOS).
+  //     Platform `is_admin`, or GET /users/me/organizations role=owner
+  //     with organization.is_personal=false and X-Organization-Id set
+  //     to that organization.id (selected org, or the only non-personal
+  //     membership). Personal owner rows stay false. Members stay false.
   //   * `canSeeGpuService` — GPU Service menu. Anyone allowed to
   //     manage clusters (admins, Org owners) sees it; non-admins fall
   //     through to "show only if a Kubernetes cluster is actually
@@ -43,9 +54,20 @@ export default (initialState: {
   //     the caller is admin of it.
   // Pass through `applyAccessExtensions` so build-time tooling can
   // widen these without editing this file. Default is a no-op.
+  const memberships =
+    initialState?.myOrganizations ?? readStoredMyOrganizations();
+  const selectedOrganizationId =
+    initialState?.currentOrganizationId !== undefined
+      ? initialState.currentOrganizationId
+      : readStoredCurrentOrganizationId();
+  const canSeeCurrentOrgOwner = isTrustedOrgOwner(
+    memberships,
+    selectedOrganizationId ?? null
+  );
+
   return applyAccessExtensions({
     canSeeAdmin: isPlatformAdmin,
-    canSeeOrgAdmin: isPlatformAdmin,
+    canSeeOrgAdmin: isPlatformAdmin || canSeeCurrentOrgOwner,
     canSeeGpuService:
       isPlatformAdmin || hasKubernetesCluster !== false || hasResourceEvents,
     canManageCurrentOrg: false,

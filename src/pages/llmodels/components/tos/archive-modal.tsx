@@ -1,3 +1,5 @@
+import { useActingOrganizationId } from '@/hooks/use-acting-organization-id';
+import { queryModelFileEntries } from '@/pages/resources/apis';
 import { ModelFile as ListItem } from '@/pages/resources/config/types';
 import {
   Input as CInput,
@@ -16,7 +18,10 @@ import {
   retryTosArchive
 } from '../../apis/tos';
 import {
+  archiveFileOptionsFromEntries,
   archiveFileOptionsFromResolved,
+  collectModelFileEntries,
+  ModelFileListingErrorCode,
   pickRetryableArchiveJob,
   readTosErrorDetails,
   relativeArchivePaths,
@@ -32,6 +37,22 @@ type ArchiveModalProps = {
   onOk: () => void;
 };
 
+type FileListingState = {
+  modelFileId?: number;
+  organizationId?: number | null;
+  loading: boolean;
+  items: { path: string; size?: number | null }[];
+  truncated: boolean;
+  errorCode?: string;
+  rootKind?: string;
+};
+
+const emptyListing = (): FileListingState => ({
+  loading: false,
+  items: [],
+  truncated: false
+});
+
 const ArchiveModal: React.FC<ArchiveModalProps> = ({
   open,
   record,
@@ -44,11 +65,29 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
   const { loading, guard, run, release } = useSubmitLock();
   const [connections, setConnections] = useState<TosConnectionPublic[]>([]);
   const [jobs, setJobs] = useState<TosArchiveJobPublic[]>([]);
+  const [listing, setListing] = useState<FileListingState>(emptyListing);
+  const actingOrganizationId = useActingOrganizationId();
+
   useEffect(() => {
     if (!open || !record?.id) {
+      setListing(emptyListing());
+      setJobs([]);
+      setConnections([]);
       return;
     }
     let cancelled = false;
+    const modelFileId = record.id;
+    const organizationId = actingOrganizationId;
+    setListing({
+      modelFileId,
+      organizationId,
+      loading: true,
+      items: [],
+      truncated: false
+    });
+    setJobs([]);
+    setConnections([]);
+    form.resetFields(['paths']);
     listAllTosConnections()
       .then((items) => {
         if (!cancelled) {
@@ -56,24 +95,75 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
         }
       })
       .catch(() => undefined);
-    listAllTosArchives({ model_file_id: record.id })
+    listAllTosArchives({ model_file_id: modelFileId })
       .then((items) => {
         if (!cancelled) {
           setJobs(items);
         }
       })
       .catch(() => undefined);
+    collectModelFileEntries((params) =>
+      queryModelFileEntries(modelFileId, params, {
+        skipErrorHandler: true
+      })
+    )
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+        setListing({
+          modelFileId,
+          organizationId,
+          loading: false,
+          items: result.items,
+          truncated: result.truncated,
+          rootKind: result.root_kind
+        });
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        setListing({
+          modelFileId,
+          organizationId,
+          loading: false,
+          items: [],
+          truncated: false,
+          errorCode:
+            readTosErrorDetails(error).error_code ||
+            ModelFileListingErrorCode.worker_unreachable
+        });
+      });
     return () => {
       cancelled = true;
     };
-  }, [open, record?.id]);
+  }, [open, record?.id, actingOrganizationId]);
 
   const handleCancel = () => {
     form.resetFields();
     setJobs([]);
     setConnections([]);
+    setListing(emptyListing());
     onCancel();
   };
+
+  const listingMatchesRecord =
+    listing.modelFileId === record?.id &&
+    listing.organizationId === actingOrganizationId &&
+    !listing.loading;
+  const listedOptions = listingMatchesRecord
+    ? archiveFileOptionsFromEntries(listing.items)
+    : [];
+  const resolvedOptions = archiveFileOptionsFromResolved(
+    record?.resolved_paths || []
+  );
+  const fileOptions = listedOptions.length ? listedOptions : resolvedOptions;
+  const listedPaths = fileOptions.map((item) => item.value);
+  const retryable = pickRetryableArchiveJob(jobs);
+  const listingErrorId = listing.errorCode
+    ? `models.form.tos.archive.files.${listing.errorCode}`
+    : undefined;
 
   const handleFinish = async (values: Record<string, any>) => {
     if (!record?.id) {
@@ -90,7 +180,8 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
               tos_version: values.tos_version,
               paths: relativeArchivePaths(
                 record.resolved_paths || [],
-                values.paths?.length ? values.paths : null
+                values.paths?.length ? values.paths : null,
+                listedPaths
               )
             },
             { skipErrorHandler: true }
@@ -150,11 +241,6 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
     }
   };
 
-  const fileOptions = archiveFileOptionsFromResolved(
-    record?.resolved_paths || []
-  );
-  const retryable = pickRetryableArchiveJob(jobs);
-
   return (
     <FormDrawer
       title={intl.formatMessage({ id: 'models.form.tos.archive.title' })}
@@ -184,6 +270,24 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
             message={intl.formatMessage({
               id: 'models.form.tos.archive.versionRetryRequired'
             })}
+          />
+        ) : null}
+        {listing.truncated && listingMatchesRecord ? (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={intl.formatMessage({
+              id: 'models.form.tos.archive.files.truncated'
+            })}
+          />
+        ) : null}
+        {listingErrorId && listingMatchesRecord ? (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={intl.formatMessage({ id: listingErrorId })}
           />
         ) : null}
         <Form.Item
@@ -242,8 +346,9 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
           extra={
             <>
               {intl.formatMessage({
-                id:
-                  fileOptions.length > 0
+                id: listing.loading
+                  ? 'models.form.tos.archive.files.loading'
+                  : fileOptions.length > 0
                     ? 'models.form.tos.archive.paths.tips'
                     : 'models.form.tos.archive.paths.directoryOnly'
               })}{' '}
@@ -256,7 +361,7 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
           <SealSelect
             mode="multiple"
             allowClear
-            disabled={!fileOptions.length}
+            disabled={!fileOptions.length || listing.loading}
             label={intl.formatMessage({ id: 'models.form.tos.archive.paths' })}
             options={fileOptions}
           ></SealSelect>

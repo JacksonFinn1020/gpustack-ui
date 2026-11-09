@@ -186,7 +186,19 @@ export default {
   'models.form.tos.archive.paths.tips':
     '留空则归档整个 READY 目录。从 READY 文件清单选择相对路径（含目录内 GGUF）。禁止绝对路径。',
   'models.form.tos.archive.paths.directoryOnly':
-    '当前 READY 缓存的 resolved_paths 只有目录，无法在此选择目录内文件。请归档整个目录，或等待后端提供相对文件清单接口。不要手填 basename 或绝对路径。',
+    '该 READY 缓存未返回可选择的目录内文件。留空则归档整个目录。不要手填 basename 或本地文件系统路径。',
+  'models.form.tos.archive.files.loading':
+    '正在通过 GET /v2/model-files/{id}/files 加载相对文件。UI 不调用 worker 接口，也不发送本地路径。',
+  'models.form.tos.archive.files.truncated':
+    '文件清单被截断（扫描上限 5000，perPage≤200），不是全量目录。pagination.total 只是本页条数。',
+  'models.form.tos.archive.files.not_ready':
+    '该模型文件尚未 READY（422 not_ready），无法列出目录内文件。READY 后仍可归档整个目录。',
+  'models.form.tos.archive.files.worker_unreachable':
+    '目标 worker 不可达（503 worker_unreachable）。未列出目录内文件。这不是空成功。',
+  'models.form.tos.archive.files.cache_missing':
+    '目标 worker 上 READY 缓存缺失（422 cache_missing）。未列出目录内文件。',
+  'models.form.tos.archive.files.path_escape':
+    '清单包含不安全路径（422 path_escape）。未列出目录内文件。',
   'models.form.tos.archive.uniqueRetry':
     '该连接/模型/版本已有归档任务。请重试该任务，不要新建。',
   'models.form.tos.archive.versionRetryRequired':

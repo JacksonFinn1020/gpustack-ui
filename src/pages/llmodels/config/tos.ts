@@ -215,7 +215,8 @@ export const formatTosSource = (record: {
 export const TOS_WORKER_ONLY_PATHS = [
   '/tos/archives/{id}/transport',
   '/tos/archives/{id}/complete',
-  '/tos/pull/{model_file_id}/transport'
+  '/tos/pull/{model_file_id}/transport',
+  '/files/archive-listing'
 ] as const;
 
 export const TOS_UI_APIS = {
@@ -225,6 +226,7 @@ export const TOS_UI_APIS = {
   catalogDetail: '/tos/releases/detail',
   archiveRetry: '/tos/archives/{id}/retry',
   modelFiles: '/model-files',
+  modelFileFiles: '/model-files/{id}/files',
   models: '/models'
 } as const;
 
@@ -569,6 +571,86 @@ export const pickRetryableArchiveJob = (
 };
 
 export const TOS_PAGE_SIZE = 100;
+export const MODEL_FILE_FILES_PAGE_SIZE = 100;
+export const MODEL_FILE_FILES_MAX_PAGE_SIZE = 200;
+export const MODEL_FILE_FILES_SCAN_CAP = 5000;
+
+export const ModelFileListingErrorCode = {
+  not_ready: 'not_ready',
+  worker_unreachable: 'worker_unreachable',
+  cache_missing: 'cache_missing',
+  path_escape: 'path_escape'
+} as const;
+
+export type ModelFileEntryPublic = {
+  path: string;
+  size?: number | null;
+};
+
+export type ModelFileEntriesPublic = {
+  items: ModelFileEntryPublic[];
+  pagination?: {
+    total?: number;
+    totalPage?: number;
+    page?: number;
+    perPage?: number;
+  };
+  truncated?: boolean;
+  next_after?: string | null;
+  root_kind?: 'directory' | 'file' | string;
+};
+
+export const clampModelFileFilesPerPage = (perPage?: number) => {
+  const size = perPage ?? MODEL_FILE_FILES_PAGE_SIZE;
+  if (!Number.isFinite(size) || size < 1) {
+    return MODEL_FILE_FILES_PAGE_SIZE;
+  }
+  return Math.min(Math.floor(size), MODEL_FILE_FILES_MAX_PAGE_SIZE);
+};
+
+export const collectModelFileEntries = async (
+  fetchPage: (params: {
+    after?: string;
+    perPage: number;
+  }) => Promise<ModelFileEntriesPublic>,
+  options?: { perPage?: number; scanCap?: number }
+): Promise<{
+  items: ModelFileEntryPublic[];
+  truncated: boolean;
+  root_kind?: ModelFileEntriesPublic['root_kind'];
+}> => {
+  const perPage = clampModelFileFilesPerPage(options?.perPage);
+  const scanCap = options?.scanCap ?? MODEL_FILE_FILES_SCAN_CAP;
+  const items: ModelFileEntryPublic[] = [];
+  let after: string | undefined;
+  let truncated = false;
+  let rootKind: ModelFileEntriesPublic['root_kind'];
+  while (items.length < scanCap) {
+    const page = await fetchPage({ after, perPage });
+    if (page.root_kind) {
+      rootKind = page.root_kind;
+    }
+    const batch = page.items || [];
+    items.push(...batch);
+    const nextAfter = page.next_after || undefined;
+    if (page.truncated && nextAfter && items.length < scanCap) {
+      after = nextAfter;
+      continue;
+    }
+    truncated =
+      Boolean(page.truncated) ||
+      (items.length >= scanCap && Boolean(nextAfter || page.truncated));
+    break;
+  }
+  if (items.length > scanCap) {
+    return {
+      items: items.slice(0, scanCap),
+      truncated: true,
+      root_kind: rootKind
+    };
+  }
+  return { items, truncated, root_kind: rootKind };
+};
 
 export const collectPaginatedItems = async <T>(
   fetchPage: (page: number, perPage: number) => Promise<Paginated<T>>,
@@ -678,16 +760,32 @@ export const archiveFileOptionsFromResolved = (
   });
 };
 
+export const archiveFileOptionsFromEntries = (
+  entries: ModelFileEntryPublic[] = []
+) => {
+  const seen = new Set<string>();
+  return entries.flatMap((entry) => {
+    const rel = normalizePosixPath(entry?.path || '');
+    if (!isSafeRelativeArchivePath(rel) || seen.has(rel)) {
+      return [];
+    }
+    seen.add(rel);
+    return [{ label: rel, value: rel }];
+  });
+};
+
 export const relativeArchivePaths = (
   resolvedPaths: string[] = [],
-  selected?: string[] | null
+  selected?: string[] | null,
+  listedPaths?: string[]
 ): string[] | null => {
   if (!selected?.length) {
     return null;
   }
-  const allowed = new Set(
-    archiveFileOptionsFromResolved(resolvedPaths).map((item) => item.value)
-  );
+  const allowed = new Set([
+    ...archiveFileOptionsFromResolved(resolvedPaths).map((item) => item.value),
+    ...(listedPaths || []).filter((item) => isSafeRelativeArchivePath(item))
+  ]);
   const safe = selected.filter(
     (item) => isSafeRelativeArchivePath(item) && allowed.has(item)
   );

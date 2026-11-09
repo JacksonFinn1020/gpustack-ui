@@ -193,7 +193,19 @@ export default {
   'models.form.tos.archive.paths.tips':
     'Leave empty to archive the whole READY directory. Select relative files from the READY file list (including nested GGUF paths). Absolute paths are rejected.',
   'models.form.tos.archive.paths.directoryOnly':
-    'This READY cache only lists a directory in resolved_paths, so nested files cannot be selected here. Archive the whole directory, or wait for a backend relative-file listing API. Do not type a basename or absolute path.',
+    'No nested files were returned for this READY cache. Leave empty to archive the whole directory. Do not type a basename or local filesystem path.',
+  'models.form.tos.archive.files.loading':
+    'Loading relative files from GET /v2/model-files/{id}/files. The UI does not call worker APIs or send a local path.',
+  'models.form.tos.archive.files.truncated':
+    'This file list is truncated (scan cap 5000, perPage ≤ 200). It is not a complete catalog. pagination.total is this page count only.',
+  'models.form.tos.archive.files.not_ready':
+    'This model file is not READY (422 not_ready). Nested files cannot be listed yet. Whole-directory archive is still allowed when READY.',
+  'models.form.tos.archive.files.worker_unreachable':
+    'Assigned worker is unreachable (503 worker_unreachable). Nested files are not listed. This is not an empty success.',
+  'models.form.tos.archive.files.cache_missing':
+    'READY cache is missing on the assigned worker (422 cache_missing). Nested files are not listed.',
+  'models.form.tos.archive.files.path_escape':
+    'Listing returned an unsafe path (422 path_escape). Nested files are not listed.',
   'models.form.tos.archive.uniqueRetry':
     'This connection/model/version already has an archive job. Retry that job instead of creating a new one.',
   'models.form.tos.archive.versionRetryRequired':

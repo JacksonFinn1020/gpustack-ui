@@ -196,7 +196,19 @@ export default {
   'models.form.tos.archive.paths.tips':
     '空なら READY ディレクトリ全体をアーカイブします。READY ファイル一覧から相対パス（ネストした GGUF を含む）を選びます。絶対パスは拒否されます。',
   'models.form.tos.archive.paths.directoryOnly':
-    'この READY キャッシュの resolved_paths はディレクトリのみで、配下ファイルは選べません。ディレクトリ全体をアーカイブするか、バックエンドの相対ファイル一覧 API を待ってください。basename や絶対パスを入力しないでください。',
+    'この READY キャッシュから選択可能な配下ファイルは返りませんでした。空ならディレクトリ全体をアーカイブします。basename やローカルファイルパスは入力しないでください。',
+  'models.form.tos.archive.files.loading':
+    'GET /v2/model-files/{id}/files から相対ファイルを読み込んでいます。UI は worker API を呼ばず、ローカルパスも送りません。',
+  'models.form.tos.archive.files.truncated':
+    'ファイル一覧は切り詰められています（走査上限 5000、perPage≤200）。全量ではありません。pagination.total は当該ページ件数だけです。',
+  'models.form.tos.archive.files.not_ready':
+    'このモデルファイルは READY ではありません（422 not_ready）。配下ファイルは一覧できません。READY 後はディレクトリ全体のアーカイブが可能です。',
+  'models.form.tos.archive.files.worker_unreachable':
+    '担当 worker に到達できません（503 worker_unreachable）。配下ファイルは一覧していません。空の成功ではありません。',
+  'models.form.tos.archive.files.cache_missing':
+    '担当 worker 上の READY キャッシュがありません（422 cache_missing）。配下ファイルは一覧していません。',
+  'models.form.tos.archive.files.path_escape':
+    '一覧に安全でないパスが含まれます（422 path_escape）。配下ファイルは一覧していません。',
   'models.form.tos.archive.uniqueRetry':
     'この接続・モデル・バージョンには既にアーカイブジョブがあります。新規作成せず再試行してください。',
   'models.form.tos.archive.versionRetryRequired':

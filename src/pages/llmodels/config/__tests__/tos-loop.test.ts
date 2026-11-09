@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  archiveFileOptionsFromEntries,
   archiveFileOptionsFromResolved,
   buildAutoArchivePayload,
   buildConnectionWritePayload,
@@ -11,6 +12,8 @@ import {
   catalogHitIsNotVerified,
   catalogListIsNotDeployable,
   clearedTosReleaseFields,
+  clampModelFileFilesPerPage,
+  collectModelFileEntries,
   collectPaginatedItems,
   confirmTosReleaseDetail,
   connectionFormInitialValues,
@@ -43,12 +46,18 @@ test('connection catalog and archive APIs are owner routes, not worker transport
     !Object.values(TOS_UI_APIS).some((path) => path.includes('browse'))
   );
   assert.ok(
-    TOS_WORKER_ONLY_PATHS.every(
+    TOS_WORKER_ONLY_PATHS.filter((path) => path.startsWith('/tos')).every(
       (path) => path.includes('transport') || path.includes('complete')
     )
   );
   assert.ok(
     TOS_WORKER_ONLY_PATHS.includes('/tos/pull/{model_file_id}/transport')
+  );
+  assert.ok(TOS_WORKER_ONLY_PATHS.includes('/files/archive-listing'));
+  assert.ok(
+    !Object.values(TOS_UI_APIS).some((path) =>
+      path.includes('archive-listing')
+    )
   );
 });
 
@@ -550,6 +559,71 @@ test('archive file options use nested relative paths and reject basename/absolut
   assert.equal(isSafeRelativeArchivePath('../secret'), false);
   assert.equal(isSafeRelativeArchivePath('/abs/model.gguf'), false);
   assert.equal(archiveFileOptionsFromResolved(['/cache/ready/qwen']).length, 0);
+});
+
+test('READY directory listing uses relative paths and does not treat pagination.total as catalog size', async () => {
+  assert.equal(TOS_UI_APIS.modelFileFiles, '/model-files/{id}/files');
+  assert.notEqual(TOS_UI_APIS.modelFileFiles, '/files/archive-listing');
+  assert.equal(clampModelFileFilesPerPage(1000), 200);
+  const listed = archiveFileOptionsFromEntries([
+    { path: 'weights/Llama-3-8B-Q4_K_M.gguf', size: 4 },
+    { path: '/etc/passwd', size: 1 },
+    { path: '../x', size: 1 }
+  ]);
+  assert.deepEqual(
+    listed.map((item) => item.value),
+    ['weights/Llama-3-8B-Q4_K_M.gguf']
+  );
+  const calls: Array<{ after?: string; perPage: number }> = [];
+  const collected = await collectModelFileEntries(async (params) => {
+    calls.push(params);
+    if (!params.after) {
+      return {
+        items: [{ path: 'config.json', size: 2 }],
+        pagination: { total: 1, totalPage: 2, page: 1, perPage: 100 },
+        truncated: true,
+        next_after: 'config.json',
+        root_kind: 'directory'
+      };
+    }
+    return {
+      items: [{ path: 'weights/Llama-3-8B-Q4_K_M.gguf', size: 4 }],
+      pagination: { total: 1, totalPage: 2, page: 1, perPage: 100 },
+      truncated: false,
+      next_after: null,
+      root_kind: 'directory'
+    };
+  });
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].after, 'config.json');
+  assert.deepEqual(
+    collected.items.map((item) => item.path),
+    ['config.json', 'weights/Llama-3-8B-Q4_K_M.gguf']
+  );
+  assert.equal(collected.truncated, false);
+  assert.deepEqual(
+    relativeArchivePaths(
+      ['/cache/qwen'],
+      ['weights/Llama-3-8B-Q4_K_M.gguf'],
+      collected.items.map((item) => item.path)
+    ),
+    ['weights/Llama-3-8B-Q4_K_M.gguf']
+  );
+});
+
+test('file listing scan cap marks truncated instead of pretending the catalog is complete', async () => {
+  const collected = await collectModelFileEntries(
+    async ({ after }) => ({
+      items: [{ path: `${after || 'a'}.gguf`, size: 1 }],
+      pagination: { total: 1, totalPage: 99, page: 1, perPage: 1 },
+      truncated: true,
+      next_after: `${(after || 'a').length}`,
+      root_kind: 'directory'
+    }),
+    { perPage: 1, scanCap: 3 }
+  );
+  assert.equal(collected.items.length, 3);
+  assert.equal(collected.truncated, true);
 });
 
 test('ERROR unique version can only retry, not create another archive', () => {

@@ -193,7 +193,19 @@ export default {
   'models.form.tos.archive.paths.tips':
     'Boş bırakılırsa tüm READY dizin arşivlenir. READY dosya listesinden göreli yollar seçin (iç içe GGUF dahil). Mutlak yollar reddedilir.',
   'models.form.tos.archive.paths.directoryOnly':
-    'Bu READY önbelleğinin resolved_paths değeri yalnızca dizin; içindeki dosyalar seçilemez. Tüm dizini arşivleyin veya göreli dosya listesi API’sini bekleyin. Basename veya mutlak yol yazmayın.',
+    'Bu READY önbelleği seçilebilir iç dosya döndürmedi. Boş bırakılırsa tüm dizin arşivlenir. Basename veya yerel dosya yolu yazmayın.',
+  'models.form.tos.archive.files.loading':
+    'Göreli dosyalar GET /v2/model-files/{id}/files ile yükleniyor. UI worker API çağırmaz ve yerel yol göndermez.',
+  'models.form.tos.archive.files.truncated':
+    'Dosya listesi kesildi (tarama tavanı 5000, perPage ≤ 200). Tam katalog değildir. pagination.total yalnızca bu sayfadaki kayıt sayısıdır.',
+  'models.form.tos.archive.files.not_ready':
+    'Bu model dosyası READY değil (422 not_ready). İç dosyalar listelenemez. READY olduktan sonra tüm dizin arşivlenebilir.',
+  'models.form.tos.archive.files.worker_unreachable':
+    'Atanan worker erişilemez (503 worker_unreachable). İç dosyalar listelenmedi. Bu boş başarı değildir.',
+  'models.form.tos.archive.files.cache_missing':
+    'Atanan worker’da READY önbelleği yok (422 cache_missing). İç dosyalar listelenmedi.',
+  'models.form.tos.archive.files.path_escape':
+    'Liste güvenli olmayan bir yol içeriyor (422 path_escape). İç dosyalar listelenmedi.',
   'models.form.tos.archive.uniqueRetry':
     'Bu bağlantı/model/sürüm için zaten bir arşiv işi var. Yenisini oluşturmayın, o işi yeniden deneyin.',
   'models.form.tos.archive.versionRetryRequired':
