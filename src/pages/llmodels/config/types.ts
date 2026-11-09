@@ -41,6 +41,17 @@ export interface ListItem {
   tos_model?: string;
   tos_version?: string;
   tos_release_path?: string;
+  tos_connection_id?: number;
+  provenance?: {
+    origin_source?: string;
+    origin_huggingface_repo_id?: string;
+    origin_huggingface_filename?: string;
+    origin_model_scope_model_id?: string;
+    origin_model_scope_file_path?: string;
+    origin_local_path?: string;
+    upstream_revision?: string;
+    artifact_uri?: string;
+  } | null;
   created_at: string;
   updated_at: string;
   // Built-in values are 'public' | 'authed' | 'allowed_users';
@@ -503,6 +514,19 @@ export interface FormData {
   tos_version?: string;
   tos_release_path?: string;
   tos_ingest_local_path?: string;
+  tos_connection_id?: number;
+  tos_release_verified?: boolean;
+  auto_archive_enabled?: boolean;
+  auto_archive_connection_id?: number;
+  auto_archive_tos_model?: string;
+  auto_archive_tos_version?: string;
+  auto_archive?: {
+    enabled: boolean;
+    connection_id?: number | null;
+    tos_model?: string | null;
+    tos_version?: string | null;
+    paths?: string[] | null;
+  };
   model_scope_model_id?: string;
   model_scope_file_path?: string;
   generic_proxy?: boolean;

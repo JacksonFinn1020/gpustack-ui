@@ -68,6 +68,8 @@ export default {
   'resources.modelfiles.form.localdir.tips':
     '默认存储目录为 <span class="desc-block">/var/lib/gpustack/cache</span>，或使用 <span class="desc-block">--cache-dir</span>（优先）、<span class="desc-block">--data-dir</span> 指定的目录。',
   'resources.modelfiles.retry.download': '重新下载',
+  'resources.modelfiles.retry.archive': '重试归档',
+  'resources.modelfiles.archive': '归档到 TOS',
   'resources.modelfiles.storagePath.holder': '等待下载完成...',
   'resources.filter.worker': '按节点筛选',
   'resources.filter.source': '按来源筛选',

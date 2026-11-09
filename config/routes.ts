@@ -220,6 +220,21 @@ const baseRoutes = [
         defaultIcon: 'icon-files',
         access: 'canSeeOrgAdmin',
         component: './resources/components/model-files'
+      },
+      {
+        // Same org-admin gate as Model Files / Deployments. OSS maps
+        // this to platform admin (`users.is_admin`); enterprise
+        // `access.extensions` widens it to Org Owner. Ordinary
+        // members stay out. Backend still enforces Org Owner on
+        // /v2/tos/connections — hiding the menu is not authorization.
+        name: 'tosConnections',
+        path: '/models/tos-connections',
+        key: 'tosConnections',
+        icon: 'icon-files',
+        selectedIcon: 'icon-files-filled',
+        defaultIcon: 'icon-files',
+        access: 'canSeeOrgAdmin',
+        component: './tos-connections/index'
       }
     ]
   },

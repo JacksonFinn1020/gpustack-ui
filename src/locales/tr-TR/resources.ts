@@ -69,6 +69,8 @@ export default {
   'resources.modelfiles.form.localdir.tips':
     'Varsayılan depolama dizini <span class="desc-block">/var/lib/gpustack/cache</span>, veya <span class="desc-block">--cache-dir</span> (öncelikli) ya da <span class="desc-block">--data-dir</span> ile belirtilen dizindir.',
   'resources.modelfiles.retry.download': 'İndirmeyi Yeniden Dene',
+  'resources.modelfiles.retry.archive': 'Arşivlemeyi yeniden dene',
+  'resources.modelfiles.archive': 'TOS’a arşivle',
   'resources.modelfiles.storagePath.holder':
     'İndirmenin tamamlanması bekleniyor...',
   'resources.filter.worker': 'İşçi düğüme göre filtrele',

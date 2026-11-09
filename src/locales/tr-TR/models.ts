@@ -175,6 +175,82 @@ export default {
   'models.form.tos.ingest': 'TOS’a yükle',
   'models.form.tos.ingest.success':
     'Sürüm yüklendi. Alanları kontrol edip dağıtın.',
+  'models.form.tos.ingest.serverOnly':
+    'Yalnızca sunucu yerel ingest (POST /v2/tos/releases). Worker önbelleğini arşivlemez. Kimlik bilgileri sunucu TOS_* değişkenlerindedir — anahtar girmeyin.',
+  'models.form.tos.connection': 'TOS bağlantısı',
+  'models.form.tos.version.unverified':
+    'GET /tos/releases/detail bu sürümü doğrulayamadı. Bağlantı, model ve açık sürümü kontrol edin.',
+  'models.form.tos.version.verifyFailed':
+    'Geçerli bağlantı/model/sürüm için TOS sürümü doğrulanamadı. Katalogda olması yetmez; detail başarılı olduktan sonra yeniden deneyin.',
+  'models.form.tos.version.immutable':
+    'Sürüm açık ve değişmez. Aynı bağlantı, model ve sürüm 409 concurrent_version döner. ERROR işini retry edin, yeni arşiv oluşturmayın.',
+  'models.form.tos.autoarchive': 'İndirmeden sonra TOS’a arşivle',
+  'models.form.tos.autoarchive.tips':
+    'Varsayılan kapalı. Arşiv durumu indirmeden bağımsızdır; arşiv hatası indirmeyi başarısız göstermez.',
+  'models.form.tos.archive.connection': 'Arşiv TOS bağlantısı',
+  'models.form.tos.archive.title': 'TOS’a arşivle',
+  'models.form.tos.archive.paths': 'Dosyalar',
+  'models.form.tos.archive.paths.tips':
+    'Boş bırakılırsa tüm READY dizin arşivlenir. READY dosya listesinden göreli yollar seçin (iç içe GGUF dahil). Mutlak yollar reddedilir.',
+  'models.form.tos.archive.paths.directoryOnly':
+    'Bu READY önbelleği seçilebilir iç dosya döndürmedi. Boş bırakılırsa tüm dizin arşivlenir. Basename veya yerel dosya yolu yazmayın.',
+  'models.form.tos.archive.files.loading':
+    'Göreli dosyalar GET /v2/model-files/{id}/files ile yükleniyor. UI worker API çağırmaz ve yerel yol göndermez.',
+  'models.form.tos.archive.files.truncated':
+    'Dosya listesi kesildi (tarama tavanı 5000, perPage ≤ 200). Tam katalog değildir. pagination.total yalnızca bu sayfadaki kayıt sayısıdır.',
+  'models.form.tos.archive.files.not_ready':
+    'Bu model dosyası READY değil (422 not_ready). İç dosyalar listelenemez. READY olduktan sonra tüm dizin arşivlenebilir.',
+  'models.form.tos.archive.files.worker_unreachable':
+    'Atanan worker erişilemez (503 worker_unreachable). İç dosyalar listelenmedi. Bu boş başarı değildir.',
+  'models.form.tos.archive.files.cache_missing':
+    'Atanan worker’da READY önbelleği yok (422 cache_missing). İç dosyalar listelenmedi.',
+  'models.form.tos.archive.files.path_escape':
+    'Liste güvenli olmayan bir yol içeriyor (422 path_escape). İç dosyalar listelenmedi.',
+  'models.form.tos.archive.uniqueRetry':
+    'Bu bağlantı/model/sürüm için zaten bir arşiv işi var. Yenisini oluşturmayın, o işi yeniden deneyin.',
+  'models.form.tos.archive.versionRetryRequired':
+    'Bu sürüm zaten hata verdi. O arşiv işini yeniden deneyin (409 version_retry_required); yeni sürüm oluşturmayın.',
+  'models.form.tos.archive.concurrentVersion':
+    'Bu bağlantıda o model sürümü zaten sürüyor (409 concurrent_version).',
+  'models.form.tos.archive.immutableConflict':
+    'Bu bağlantı o model sürümünü zaten yayımladı (409 immutable_conflict). Yeni tos_version kullanın.',
+  'models.form.tos.release.required':
+    'Katalogdan model ve açık sürüm seçin. Yalnızca tos_* yazmak sürüm seçimi sayılmaz.',
+  'models.form.tos.prefix': 'Önek',
+  'models.form.tos.prefix.tips':
+    'Bu Org’un okuyup yazabileceği göreli nesne öneki. Dolu önek tüm kovaya genişlemez.',
+  'models.form.tos.prefix.empty':
+    'Boş önek tüm kova kapsamıdır; varsayılan değildir. Tüm kovaya izin ver işaretlenirse allow_bucket_root=true gönderilir.',
+  'models.form.tos.prefix.bucketRootRequired':
+    'Boş önek tüm kovayı yetkilendirir. Tüm kovaya izin verin veya göreli önek girin.',
+  'models.form.tos.allowBucketRoot': 'Tüm kovaya izin ver',
+  'models.form.tos.allowBucketRoot.tips':
+    'Yalnızca önek boşken gerekir. Catalog ve arşiv anahtarları tüm kovayı kaplar. Önek izolasyonunu aşmak için kullanmayın.',
+  'models.form.tos.scope.prefix': 'önek',
+  'models.form.tos.scope.bucket': 'kova',
+  'models.form.tos.catalog.unverified': 'manifest okunamadı',
+  'models.form.tos.credentialMode': 'Kimlik bilgisi modu',
+  'models.form.tos.credentialMode.inline': 'Access key / secret key',
+  'models.form.tos.credentialMode.env':
+    'Ortam (kontrol düzlemi ve worker TOS_*)',
+  'models.form.tos.accessKey': 'Access key',
+  'models.form.tos.secretKey': 'Secret key',
+  'models.form.tos.securityToken': 'Security token',
+  'models.form.tos.credentialRef': 'Kimlik bilgisi referansı',
+  'models.form.tos.secret.placeholder':
+    'Kayıtlı sırrı korumak için boş bırakın',
+  'models.form.tos.secret.tips':
+    'Yalnızca yazılır. Inline AK/SK/STS yalnızca GPUSTACK_TOS_SECRET_KEY ile mühürlenir (JWT’ye düşmez). Okuma maskelenmiş access key döner. Anahtar yoksa fail-closed. Sırları tarayıcıya yazmayın, mühürlemeyi kapatmayın.',
+  'models.form.tos.env.endpoint.tips':
+    'env modu yalnızca credential_ref=env kaydeder. TOS_ACCESS_KEY / TOS_SECRET_KEY, TOS çağrısını yapan süreçte okunur: worker pull ve arşiv, kontrol düzlemi catalog, size ve complete doğrulaması. Her süreç TOS_ENDPOINT veya TOS_ALLOWED_ENDPOINTS değerini bu bağlantının HTTPS host’una sabitlemelidir. Inline anahtarlar süreç env’ine düşmez. Yalnızca worker env pull/arşiv için yeter; catalog ve dağıtım manifest denetimi CP’de aynı sabitlemeyi veya inline ister. Pin yoksa açık hata döner — düz metin yapıştırmayın, denetimi kapatmayın.',
+  'models.form.tos.connections.title': 'TOS bağlantısı',
+  'models.form.tos.connections.create': 'TOS bağlantısı ekle',
+  'models.form.tos.connections.edit': 'TOS bağlantısını düzenle',
+  'models.form.tos.delete.remoteKeep':
+    'Yerel dosya veya dağıtımı silmek uzak TOS sürümünü silmez.',
+  'models.table.origin': 'Orijinal kaynak',
+  'models.table.artifact': 'TOS artefaktı',
+  'models.table.archiveStatus': 'Arşiv durumu',
   'models.form.filePath': 'Model Yolu',
   'models.form.backendVersion': 'Altyapı Sürümü',
   'models.form.backendVersion.tips':

@@ -178,6 +178,80 @@ export default {
   'models.form.tos.ingest': 'TOS に取り込み',
   'models.form.tos.ingest.success':
     'リリースを取り込みました。内容を確認してデプロイしてください。',
+  'models.form.tos.ingest.serverOnly':
+    'サーバー上のローカル取り込みのみ（POST /v2/tos/releases）。Worker キャッシュのアーカイブではありません。認証情報はサーバーの TOS_* 変数を使い、キーは入力しないでください。',
+  'models.form.tos.connection': 'TOS 接続',
+  'models.form.tos.version.unverified':
+    'GET /tos/releases/detail でこのバージョンを確認できませんでした。接続、モデル、明示バージョンを確認してください。',
+  'models.form.tos.version.verifyFailed':
+    '現在の接続・モデル・バージョンの TOS 成果物を検証できませんでした。カタログにあるだけではデプロイできません。detail 成功後に再試行してください。',
+  'models.form.tos.version.immutable':
+    'バージョンは明示的で不変です。同じ接続・モデル・バージョンの再利用は 409 concurrent_version になります。ERROR ジョブは再試行し、新規アーカイブは作らないでください。',
+  'models.form.tos.autoarchive': 'ダウンロード後に TOS へアーカイブ',
+  'models.form.tos.autoarchive.tips':
+    '既定はオフ。アーカイブ状態はダウンロード状態と独立し、アーカイブ失敗でダウンロード失敗にはなりません。',
+  'models.form.tos.archive.connection': 'アーカイブ TOS 接続',
+  'models.form.tos.archive.title': 'TOS へアーカイブ',
+  'models.form.tos.archive.paths': 'ファイル',
+  'models.form.tos.archive.paths.tips':
+    '空なら READY ディレクトリ全体をアーカイブします。READY ファイル一覧から相対パス（ネストした GGUF を含む）を選びます。絶対パスは拒否されます。',
+  'models.form.tos.archive.paths.directoryOnly':
+    'この READY キャッシュから選択可能な配下ファイルは返りませんでした。空ならディレクトリ全体をアーカイブします。basename やローカルファイルパスは入力しないでください。',
+  'models.form.tos.archive.files.loading':
+    'GET /v2/model-files/{id}/files から相対ファイルを読み込んでいます。UI は worker API を呼ばず、ローカルパスも送りません。',
+  'models.form.tos.archive.files.truncated':
+    'ファイル一覧は切り詰められています（走査上限 5000、perPage≤200）。全量ではありません。pagination.total は当該ページ件数だけです。',
+  'models.form.tos.archive.files.not_ready':
+    'このモデルファイルは READY ではありません（422 not_ready）。配下ファイルは一覧できません。READY 後はディレクトリ全体のアーカイブが可能です。',
+  'models.form.tos.archive.files.worker_unreachable':
+    '担当 worker に到達できません（503 worker_unreachable）。配下ファイルは一覧していません。空の成功ではありません。',
+  'models.form.tos.archive.files.cache_missing':
+    '担当 worker 上の READY キャッシュがありません（422 cache_missing）。配下ファイルは一覧していません。',
+  'models.form.tos.archive.files.path_escape':
+    '一覧に安全でないパスが含まれます（422 path_escape）。配下ファイルは一覧していません。',
+  'models.form.tos.archive.uniqueRetry':
+    'この接続・モデル・バージョンには既にアーカイブジョブがあります。新規作成せず再試行してください。',
+  'models.form.tos.archive.versionRetryRequired':
+    'このバージョンは既に失敗しています。そのアーカイブジョブを再試行し（409 version_retry_required）、新しいバージョンを作らないでください。',
+  'models.form.tos.archive.concurrentVersion':
+    'この接続にはそのモデルバージョンが進行中です（409 concurrent_version）。',
+  'models.form.tos.archive.immutableConflict':
+    'この接続は既にそのモデルバージョンを公開しています（409 immutable_conflict）。新しい tos_version を使ってください。',
+  'models.form.tos.release.required':
+    'カタログからモデルと明示バージョンを選択してください。TOS 座標の手入力だけでは成果物の選択になりません。',
+  'models.form.tos.prefix': 'プレフィックス',
+  'models.form.tos.prefix.tips':
+    'この Org が読み書きできる相対オブジェクトプレフィックス。空でないプレフィックスはその範囲のまま、バケット全体へ拡大しません。',
+  'models.form.tos.prefix.empty':
+    '空のプレフィックスはバケット全体です。既定ではありません。バケット全体を許可すると allow_bucket_root=true を送ります。',
+  'models.form.tos.prefix.bucketRootRequired':
+    '空のプレフィックスはバケット全体を許可します。バケット全体を許可するか、相対プレフィックスを入力してください。',
+  'models.form.tos.allowBucketRoot': 'バケット全体を許可',
+  'models.form.tos.allowBucketRoot.tips':
+    'プレフィックスが空のときだけ必要です。カタログとアーカイブ鍵がバケット全体になります。プレフィックス隔離の迂回に使わないでください。',
+  'models.form.tos.scope.prefix': 'プレフィックス',
+  'models.form.tos.scope.bucket': 'バケット',
+  'models.form.tos.catalog.unverified': 'マニフェスト未読',
+  'models.form.tos.credentialMode': '認証モード',
+  'models.form.tos.credentialMode.inline': 'Access Key / Secret Key',
+  'models.form.tos.credentialMode.env': '環境変数（CP と Worker の TOS_*）',
+  'models.form.tos.accessKey': 'Access Key',
+  'models.form.tos.secretKey': 'Secret Key',
+  'models.form.tos.securityToken': 'Security Token',
+  'models.form.tos.credentialRef': '認証参照',
+  'models.form.tos.secret.placeholder': '空欄のまま保存済みシークレットを維持',
+  'models.form.tos.secret.tips':
+    '書き込み専用。Inline の AK/SK/STS は GPUSTACK_TOS_SECRET_KEY のみで密封します（JWT secret にはフォールバックしません）。読み取りはマスクされた Access Key のみ。キー欠如は fail-closed。ブラウザやログに保存せず、密封を無効化しないでください。',
+  'models.form.tos.env.endpoint.tips':
+    'env モードは credential_ref=env のみ保存します。TOS_ACCESS_KEY / TOS_SECRET_KEY は TOS 呼び出しを行うプロセスで読みます。Worker は pull とアーカイブ、コントロールプレーンは catalog・size・complete 検証です。各プロセスは TOS_ENDPOINT または TOS_ALLOWED_ENDPOINTS をこの接続の HTTPS ホストに固定する必要があります。Inline 鍵はプロセス env にフォールバックしません。Worker だけの env は pull/アーカイブに足り、catalog とデプロイ時マニフェスト検証には CP 側の同じ固定か inline が必要です。ピン欠如は明示エラーになります。平文を貼ったり検査を切ったりしないでください。',
+  'models.form.tos.connections.title': 'TOS 接続',
+  'models.form.tos.connections.create': 'TOS 接続を追加',
+  'models.form.tos.connections.edit': 'TOS 接続を編集',
+  'models.form.tos.delete.remoteKeep':
+    'ローカルファイルやデプロイの削除は、リモート TOS リリースを削除しません。',
+  'models.table.origin': '元のソース',
+  'models.table.artifact': 'TOS 成果物',
+  'models.table.archiveStatus': 'アーカイブ状態',
   'models.form.filePath': 'モデルパス',
   'models.form.backendVersion': 'バックエンドバージョン',
   'models.form.backendVersion.tips':

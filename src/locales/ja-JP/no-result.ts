@@ -19,6 +19,10 @@ export default {
   'noresult.modelfiles.subTitle': 'モデルファイルはまだ追加されていません。',
   'noresult.modelfiles.nofound':
     '条件に一致するモデルファイルが見つかりません。',
+  'noresult.tosConnections.title': 'TOS 接続がありません',
+  'noresult.tosConnections.subTitle': 'TOS 接続はまだ追加されていません。',
+  'noresult.tosConnections.nofound':
+    '条件に一致する TOS 接続が見つかりません。',
   'noresult.backend.title': '推論バックエンドがありません',
   'noresult.backend.subTitle': '推論バックエンドはまだ追加されていません。',
   'noresult.backend.nofound':

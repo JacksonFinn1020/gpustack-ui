@@ -168,6 +168,80 @@ export default {
     '可选。将 GPUStack 服务器上的目录（或已下载的快照）发布为 TOS release。凭证只使用服务器 TOS_* 环境变量，请勿在此填写访问密钥。',
   'models.form.tos.ingest': '上传到 TOS',
   'models.form.tos.ingest.success': '已写入 TOS，请确认字段后部署。',
+  'models.form.tos.ingest.serverOnly':
+    '仅服务器本地入库（POST /v2/tos/releases），不会归档 Worker 缓存。凭证只使用服务器 TOS_* 变量，请勿填写密钥。',
+  'models.form.tos.connection': 'TOS 连接',
+  'models.form.tos.version.unverified':
+    '无法通过 GET /tos/releases/detail 确认该版本。请核对连接、模型与显式版本。',
+  'models.form.tos.version.verifyFailed':
+    '未能按当前连接/模型/版本校验 TOS 制品。仅 catalog 命中不能部署，请等 detail 成功后再试。',
+  'models.form.tos.version.immutable':
+    '版本必须显式且不可变。同一连接、模型与版本重复写入会返回 409 concurrent_version。已有 ERROR 任务请重试，不要再新建归档。',
+  'models.form.tos.autoarchive': '下载成功后归档到 TOS',
+  'models.form.tos.autoarchive.tips':
+    '默认关闭。归档状态与下载状态独立：归档失败不会把下载标成失败。',
+  'models.form.tos.archive.connection': '归档 TOS 连接',
+  'models.form.tos.archive.title': '归档到 TOS',
+  'models.form.tos.archive.paths': '文件',
+  'models.form.tos.archive.paths.tips':
+    '留空则归档整个 READY 目录。从 READY 文件清单选择相对路径（含目录内 GGUF）。禁止绝对路径。',
+  'models.form.tos.archive.paths.directoryOnly':
+    '该 READY 缓存未返回可选择的目录内文件。留空则归档整个目录。不要手填 basename 或本地文件系统路径。',
+  'models.form.tos.archive.files.loading':
+    '正在通过 GET /v2/model-files/{id}/files 加载相对文件。UI 不调用 worker 接口，也不发送本地路径。',
+  'models.form.tos.archive.files.truncated':
+    '文件清单被截断（扫描上限 5000，perPage≤200），不是全量目录。pagination.total 只是本页条数。',
+  'models.form.tos.archive.files.not_ready':
+    '该模型文件尚未 READY（422 not_ready），无法列出目录内文件。READY 后仍可归档整个目录。',
+  'models.form.tos.archive.files.worker_unreachable':
+    '目标 worker 不可达（503 worker_unreachable）。未列出目录内文件。这不是空成功。',
+  'models.form.tos.archive.files.cache_missing':
+    '目标 worker 上 READY 缓存缺失（422 cache_missing）。未列出目录内文件。',
+  'models.form.tos.archive.files.path_escape':
+    '清单包含不安全路径（422 path_escape）。未列出目录内文件。',
+  'models.form.tos.archive.uniqueRetry':
+    '该连接/模型/版本已有归档任务。请重试该任务，不要新建。',
+  'models.form.tos.archive.versionRetryRequired':
+    '该版本已失败。请重试该归档任务（409 version_retry_required），不要新建版本。',
+  'models.form.tos.archive.concurrentVersion':
+    '该连接上该模型版本已在进行中（409 concurrent_version）。',
+  'models.form.tos.archive.immutableConflict':
+    '该连接已发布该模型版本（409 immutable_conflict）。请使用新的 tos_version。',
+  'models.form.tos.release.required':
+    '请从 catalog 选择模型并指定显式版本。仅手填 TOS 坐标不算已选制品。',
+  'models.form.tos.prefix': '前缀',
+  'models.form.tos.prefix.tips':
+    '该 Org 可读写的相对对象前缀。非空前缀保持原有范围，不会扩大到整桶。',
+  'models.form.tos.prefix.empty':
+    '空前缀表示整桶范围，不是默认。勾选允许整桶才会提交 allow_bucket_root=true。',
+  'models.form.tos.prefix.bucketRootRequired':
+    '空前缀会授权整桶。请勾选允许整桶，或填写相对前缀。',
+  'models.form.tos.allowBucketRoot': '允许整桶',
+  'models.form.tos.allowBucketRoot.tips':
+    '仅在前缀为空时需要。启用后 catalog 与归档键覆盖整个桶。不要用它绕过前缀隔离。',
+  'models.form.tos.scope.prefix': '前缀范围',
+  'models.form.tos.scope.bucket': '整桶',
+  'models.form.tos.catalog.unverified': '清单未读',
+  'models.form.tos.credentialMode': '凭证模式',
+  'models.form.tos.credentialMode.inline': 'Access Key / Secret Key',
+  'models.form.tos.credentialMode.env': '环境变量（控制面与 Worker 的 TOS_*）',
+  'models.form.tos.accessKey': 'Access Key',
+  'models.form.tos.secretKey': 'Secret Key',
+  'models.form.tos.securityToken': 'Security Token',
+  'models.form.tos.credentialRef': '凭证引用',
+  'models.form.tos.secret.placeholder': '留空则保留已存储的密钥',
+  'models.form.tos.secret.tips':
+    '只写。Inline 的 AK/SK/STS 仅用 GPUSTACK_TOS_SECRET_KEY 密封（不再回落到 JWT secret）。读取只返回脱敏 Access Key。缺少 GPUSTACK_TOS_SECRET_KEY 会 fail-closed。不要写入浏览器或日志，也不要关闭密封。',
+  'models.form.tos.env.endpoint.tips':
+    'env 模式只保存 credential_ref=env。TOS_ACCESS_KEY / TOS_SECRET_KEY 在实际发起 TOS 调用的进程上读取：Worker 用于 pull 与归档，控制面用于 catalog、size 与 complete 校验。这些进程都必须把 TOS_ENDPOINT 或 TOS_ALLOWED_ENDPOINTS 钉到本连接的 HTTPS host。Inline 密钥不会回落到进程 env。仅 Worker env 只够 pull/归档；catalog 与部署时清单校验需要控制面同样钉死，或改用 inline。缺少钉死会返回明确错误，不要改填明文或关闭校验。',
+  'models.form.tos.connections.title': 'TOS 连接',
+  'models.form.tos.connections.create': '添加 TOS 连接',
+  'models.form.tos.connections.edit': '编辑 TOS 连接',
+  'models.form.tos.delete.remoteKeep':
+    '删除本地文件或部署不会删除远端 TOS release。',
+  'models.table.origin': '原来源',
+  'models.table.artifact': 'TOS 制品',
+  'models.table.archiveStatus': '归档状态',
   'models.form.filePath': '模型路径',
   'models.form.backendVersion': '后端版本',
   'models.form.backendVersion.tips':

@@ -1,16 +1,26 @@
 import { modelsExpandKeysAtom } from '@/atoms/models';
 import { PageAction } from '@/config';
 import { PaginationKey, TABLE_SORT_DIRECTIONS } from '@/config/settings';
+import { useActingOrganizationId } from '@/hooks/use-acting-organization-id';
 import useTableFetch from '@/hooks/use-table-fetch';
 import PageBox from '@/pages/_components/page-box';
 import { createModel } from '@/pages/llmodels/apis';
+import { listAllTosArchives, retryTosArchive } from '@/pages/llmodels/apis/tos';
 import DeployModal from '@/pages/llmodels/components/deployment/deploy-modal';
 import DownloadModal from '@/pages/llmodels/components/download';
+import ArchiveModal from '@/pages/llmodels/components/tos/archive-modal';
 import { modelSourceMap } from '@/pages/llmodels/config';
 import {
   modalConfig,
   onLineSourceOptions
 } from '@/pages/llmodels/config/button-actions';
+import {
+  TosArchiveInFlight,
+  TosArchiveJobPublic,
+  buildModelFileDownloadPayload,
+  latestArchiveJob,
+  pickRetryableArchiveJob
+} from '@/pages/llmodels/config/tos';
 import { SourceType } from '@/pages/llmodels/config/types';
 import { backendOptionsMap } from '@/pages/llmodels/constants/backend-parameters';
 import useCheckBackend from '@/pages/llmodels/hooks/use-check-backend';
@@ -29,7 +39,7 @@ import { useMemoizedFn } from 'ahooks';
 import { ConfigProvider, Table, message } from 'antd';
 import { useAtom } from 'jotai';
 import _ from 'lodash';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   MODEL_FILES_API,
   deleteModelFile,
@@ -73,6 +83,7 @@ const ModelFiles = () => {
     watch: true,
     contentForDelete: 'resources.modelfiles.modelfile'
   });
+  const actingOrganizationId = useActingOrganizationId();
   const intl = useIntl();
   const { showSuccess } = useAppUtils();
   const [downloadModalStatus, setDownlaodMoalStatus] = useState<{
@@ -118,7 +129,7 @@ const ModelFiles = () => {
   const checkIsGGUF = (record: ListItem) => {
     const isGGUF = _.includes(record.resolved_paths?.[0], 'gguf');
     const isOllama = !!record.ollama_library_model_name;
-    return isGGUF || isOllama;
+    return isGGUF || isOllama || record.provenance?.gguf === true;
   };
 
   const getModelInfo = (record: ListItem) => {
@@ -141,12 +152,14 @@ const ModelFiles = () => {
     if (record.source === modelSourceMap.tos_value) {
       return {
         source: modelSourceMap.tos_value,
+        tos_connection_id: record.tos_connection_id,
         tos_endpoint: record.tos_endpoint,
         tos_region: record.tos_region,
         tos_bucket: record.tos_bucket,
         tos_model: record.tos_model,
         tos_version: record.tos_version,
-        tos_release_path: record.tos_release_path
+        tos_release_path: record.tos_release_path,
+        tos_release_verified: true
       };
     }
 
@@ -193,7 +206,10 @@ const ModelFiles = () => {
         isGGUF: !audioModelTag && isGGUF,
         isAudio: !!audioModelTag,
         gpuOptions: gpuOptions,
-        defaultBackend: backendOptionsMap.vllm
+        defaultBackend:
+          !audioModelTag && isGGUF
+            ? backendOptionsMap.llamaBox
+            : backendOptionsMap.vllm
       }),
       isGGUF: !audioModelTag && isGGUF
     };
@@ -217,6 +233,18 @@ const ModelFiles = () => {
       } else if (val === 'retry') {
         await retryDownloadModelFile(record.id);
         showSuccess();
+      } else if (val === 'retry-archive') {
+        const jobs = await listAllTosArchives({
+          model_file_id: record.id
+        });
+        const job = pickRetryableArchiveJob(jobs);
+        if (!job) {
+          return;
+        }
+        await retryTosArchive(job.id);
+        showSuccess();
+      } else if (val === 'archive') {
+        setArchiveModal({ open: true, record });
       } else if (val === 'deploy') {
         saveScrollHeight();
 
@@ -272,9 +300,66 @@ const ModelFiles = () => {
     });
   };
 
+  const [archiveModal, setArchiveModal] = useState<{
+    open: boolean;
+    record?: ListItem | null;
+  }>({ open: false, record: null });
+  const [archiveJobs, setArchiveJobs] = useState<
+    Record<number, TosArchiveJobPublic>
+  >({});
+  const previousOrgId = useRef<number | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (previousOrgId.current === undefined) {
+      previousOrgId.current = actingOrganizationId;
+      return;
+    }
+    if (previousOrgId.current === actingOrganizationId) {
+      return;
+    }
+    previousOrgId.current = actingOrganizationId;
+    setArchiveModal({ open: false, record: null });
+    setArchiveJobs({});
+    fetchData();
+  }, [actingOrganizationId]);
+
+  useEffect(() => {
+    const tracked = (dataSource.dataList || []).filter(
+      (item) =>
+        item.archive_state &&
+        (TosArchiveInFlight.includes(item.archive_state as any) ||
+          item.archive_state === 'error')
+    );
+    if (!tracked.length) {
+      setArchiveJobs({});
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      tracked.map((item) => listAllTosArchives({ model_file_id: item.id }))
+    )
+      .then((pages) => {
+        if (cancelled) {
+          return;
+        }
+        const next: Record<number, TosArchiveJobPublic> = {};
+        pages.forEach((jobs, index) => {
+          const latest = latestArchiveJob(jobs);
+          if (latest) {
+            next[tracked[index].id] = latest;
+          }
+        });
+        setArchiveJobs(next);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [dataSource.dataList]);
+
   const handleDownload = async (data: any) => {
     try {
-      await downloadModelFile(data);
+      await downloadModelFile(buildModelFileDownloadPayload(data));
       setDownlaodMoalStatus({
         ...downloadModalStatus,
         show: false
@@ -323,7 +408,8 @@ const ModelFiles = () => {
   const columns = useFilesColumns({
     handleSelect,
     sortOrder,
-    workersList
+    workersList,
+    archiveJobs
   });
 
   const readyWorkers = useMemo(() => {
@@ -396,6 +482,12 @@ const ModelFiles = () => {
           workerOptions={readyWorkers}
           workersList={workersList}
         ></DownloadModal>
+        <ArchiveModal
+          open={archiveModal.open}
+          record={archiveModal.record}
+          onCancel={() => setArchiveModal({ open: false, record: null })}
+          onOk={fetchData}
+        ></ArchiveModal>
         <DeployModal
           deploymentType="modelFiles"
           title={intl.formatMessage({ id: 'models.button.deploy' })}

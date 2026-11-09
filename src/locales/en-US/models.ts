@@ -175,6 +175,80 @@ export default {
   'models.form.tos.ingest': 'Ingest to TOS',
   'models.form.tos.ingest.success':
     'Release ingested. Review the fields and deploy.',
+  'models.form.tos.ingest.serverOnly':
+    'Server-local ingest only (POST /v2/tos/releases). This does not archive a worker cache. Credentials stay on the server as TOS_* variables — do not enter keys here.',
+  'models.form.tos.connection': 'TOS connection',
+  'models.form.tos.version.unverified':
+    'This version could not be confirmed from GET /tos/releases/detail. Confirm the connection, model, and explicit version.',
+  'models.form.tos.version.verifyFailed':
+    'Could not verify this TOS release for the current connection, model, and version. Catalog presence is not enough — retry after the detail request succeeds.',
+  'models.form.tos.version.immutable':
+    'Version is explicit and immutable. Reusing the same connection, model, and version returns 409 concurrent_version. Retry the existing error job instead of creating another archive.',
+  'models.form.tos.autoarchive': 'Archive to TOS after download',
+  'models.form.tos.autoarchive.tips':
+    'Off by default. Download state stays independent: an archive failure does not mark the download as failed.',
+  'models.form.tos.archive.connection': 'Archive TOS connection',
+  'models.form.tos.archive.title': 'Archive to TOS',
+  'models.form.tos.archive.paths': 'Files',
+  'models.form.tos.archive.paths.tips':
+    'Leave empty to archive the whole READY directory. Select relative files from the READY file list (including nested GGUF paths). Absolute paths are rejected.',
+  'models.form.tos.archive.paths.directoryOnly':
+    'No nested files were returned for this READY cache. Leave empty to archive the whole directory. Do not type a basename or local filesystem path.',
+  'models.form.tos.archive.files.loading':
+    'Loading relative files from GET /v2/model-files/{id}/files. The UI does not call worker APIs or send a local path.',
+  'models.form.tos.archive.files.truncated':
+    'This file list is truncated (scan cap 5000, perPage ≤ 200). It is not a complete catalog. pagination.total is this page count only.',
+  'models.form.tos.archive.files.not_ready':
+    'This model file is not READY (422 not_ready). Nested files cannot be listed yet. Whole-directory archive is still allowed when READY.',
+  'models.form.tos.archive.files.worker_unreachable':
+    'Assigned worker is unreachable (503 worker_unreachable). Nested files are not listed. This is not an empty success.',
+  'models.form.tos.archive.files.cache_missing':
+    'READY cache is missing on the assigned worker (422 cache_missing). Nested files are not listed.',
+  'models.form.tos.archive.files.path_escape':
+    'Listing returned an unsafe path (422 path_escape). Nested files are not listed.',
+  'models.form.tos.archive.uniqueRetry':
+    'This connection/model/version already has an archive job. Retry that job instead of creating a new one.',
+  'models.form.tos.archive.versionRetryRequired':
+    'This version already failed. Retry that archive job (409 version_retry_required). Do not create a new version.',
+  'models.form.tos.archive.concurrentVersion':
+    'This connection already has that model version in progress (409 concurrent_version).',
+  'models.form.tos.archive.immutableConflict':
+    'This connection already published that model version (409 immutable_conflict). Use a new tos_version.',
+  'models.form.tos.release.required':
+    'Select a catalog model and an explicit version. Typing TOS coordinates alone is not a selected artifact.',
+  'models.form.tos.prefix': 'Prefix',
+  'models.form.tos.prefix.tips':
+    'Relative object prefix this Org may read and write. A non-empty prefix keeps that jail and is not expanded to the whole bucket.',
+  'models.form.tos.prefix.empty':
+    'Empty prefix is whole-bucket scope. That is not the default. Check Allow whole bucket to send allow_bucket_root=true.',
+  'models.form.tos.prefix.bucketRootRequired':
+    'Empty prefix grants the whole bucket. Check Allow whole bucket, or enter a relative prefix.',
+  'models.form.tos.allowBucketRoot': 'Allow whole bucket',
+  'models.form.tos.allowBucketRoot.tips':
+    'Required only when prefix is empty. Catalog and archive keys then span the entire bucket. Do not use this to bypass a prefix jail.',
+  'models.form.tos.scope.prefix': 'prefix',
+  'models.form.tos.scope.bucket': 'bucket',
+  'models.form.tos.catalog.unverified': 'manifest unread',
+  'models.form.tos.credentialMode': 'Credential mode',
+  'models.form.tos.credentialMode.inline': 'Access key / secret key',
+  'models.form.tos.credentialMode.env': 'Environment (TOS_* on CP and workers)',
+  'models.form.tos.accessKey': 'Access key',
+  'models.form.tos.secretKey': 'Secret key',
+  'models.form.tos.securityToken': 'Security token',
+  'models.form.tos.credentialRef': 'Credential reference',
+  'models.form.tos.secret.placeholder': 'Leave blank to keep the stored secret',
+  'models.form.tos.secret.tips':
+    'Write-only. Inline AK/SK/STS are sealed at rest with GPUSTACK_TOS_SECRET_KEY only (not the JWT secret). Reads return a redacted access key and never the secret. Missing GPUSTACK_TOS_SECRET_KEY fails closed. Do not store secrets in the browser or logs, and do not turn sealing off.',
+  'models.form.tos.env.endpoint.tips':
+    'Env mode stores credential_ref=env. TOS_ACCESS_KEY / TOS_SECRET_KEY are read on the process that makes the TOS call: the assigned worker for pull and archive, the control plane for catalog, size, and complete verify. Each of those processes must pin TOS_ENDPOINT or TOS_ALLOWED_ENDPOINTS to this connection’s HTTPS host. Inline keys never fall back to process env. Worker-only env is enough for pull/archive; catalog and deploy-time manifest checks need the same pin on the control plane, or use inline. A missing pin returns an explicit error — do not paste plaintext keys into the catalog path or disable the check.',
+  'models.form.tos.connections.title': 'TOS connection',
+  'models.form.tos.connections.create': 'Add TOS Connection',
+  'models.form.tos.connections.edit': 'Edit TOS Connection',
+  'models.form.tos.delete.remoteKeep':
+    'Deleting a local file or deployment does not delete the remote TOS release.',
+  'models.table.origin': 'Original source',
+  'models.table.artifact': 'TOS artifact',
+  'models.table.archiveStatus': 'Archive status',
   'models.form.filePath': 'Model Path',
   'models.form.backendVersion': 'Backend Version',
   'models.form.backendVersion.tips':

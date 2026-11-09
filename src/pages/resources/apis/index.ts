@@ -165,3 +165,21 @@ export async function retryDownloadModelFile(id: string | number) {
     }
   );
 }
+
+export async function queryModelFileEntries(
+  id: string | number,
+  params?: { after?: string; perPage?: number },
+  options?: { skipErrorHandler?: boolean; signal?: AbortSignal }
+) {
+  // Control-plane listing only: GET /v2/model-files/{id}/files.
+  // Do not call worker /files/archive-listing or send a filesystem root.
+  return request(`${MODEL_FILES_API}/${id}/files`, {
+    method: 'GET',
+    params: {
+      ...(params?.after ? { after: params.after } : {}),
+      ...(params?.perPage != null ? { perPage: params.perPage } : {})
+    },
+    skipErrorHandler: options?.skipErrorHandler,
+    signal: options?.signal
+  });
+}

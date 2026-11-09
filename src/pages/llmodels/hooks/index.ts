@@ -9,7 +9,11 @@ import _ from 'lodash';
 import { useEffect, useRef, useState } from 'react';
 import { evaluationsModelSpec } from '../apis';
 import { modelSourceMap, modelTaskMap, RoleLabelMap } from '../config';
-import { hasTosCoordinates, stripTosUiFields } from '../config/tos';
+import {
+  hasVerifiedTosRelease,
+  isTosGguf,
+  stripTosUiFields
+} from '../config/tos';
 import {
   EvaluateResult,
   FormData,
@@ -594,7 +598,8 @@ export const useCheckCompatibility = () => {
       isGGUFFile ||
       isOllamaModelFile ||
       allValues?.huggingface_filename?.endsWith?.('.gguf') ||
-      allValues?.model_scope_file_path?.endsWith?.('.gguf')
+      allValues?.model_scope_file_path?.endsWith?.('.gguf') ||
+      isTosGguf(allValues)
     );
   };
 
@@ -673,7 +678,7 @@ export const useCheckCompatibility = () => {
       case modelSourceMap.local_path_value:
         return !allValues.local_path;
       case modelSourceMap.tos_value:
-        return !hasTosCoordinates(allValues);
+        return !hasVerifiedTosRelease(allValues);
       default:
         return false;
     }

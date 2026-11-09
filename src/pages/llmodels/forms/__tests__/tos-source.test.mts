@@ -20,6 +20,9 @@ const InputField = ({ value, onChange, label }: any) =>
 mock.module('@gpustack/core-ui', {
   namedExports: {
     Input: { Input: InputField },
+    AutoComplete: InputField,
+    Select: InputField,
+    CheckboxField: InputField,
     useAppUtils: () => ({ getRuleMessage: (_: string, id: string) => id })
   }
 });
@@ -32,6 +35,14 @@ mock.module(new URL('../../apis/index.ts', import.meta.url).href, {
   namedExports: {
     queryTosSources: async () => ({ items: [] }),
     ingestTosRelease: async () => ({})
+  }
+});
+mock.module(new URL('../../apis/tos.ts', import.meta.url).href, {
+  namedExports: {
+    queryTosConnections: async () => ({ items: [], pagination: {} }),
+    listAllTosConnections: async () => [],
+    queryTosReleaseCatalog: async () => [],
+    getTosReleaseDetail: async () => ({})
   }
 });
 mock.module(new URL('../../config/index.ts', import.meta.url).href, {
@@ -82,7 +93,13 @@ test('TOS source fields render, hide for other sources, and ingest path is optio
       { form, initialValues: { source: 'tos' } },
       createElement(
         FormContext.Provider,
-        { value: { formKey: 'deployment' } as any },
+        {
+          value: {
+            formKey: 'deployment',
+            onBackendChange: () => undefined,
+            flatBackendOptions: []
+          } as any
+        },
         createElement(TosSource),
         createElement(
           Form.Item,
@@ -130,10 +147,35 @@ test('TOS source fields render, hide for other sources, and ingest path is optio
   assert.equal(values.tos_model, 'qwen3');
   assert.equal(values.tos_ingest_local_path, undefined);
 
+  const runtimeErrors: unknown[] = [];
+  const onError = (event: ErrorEvent) => {
+    runtimeErrors.push(event.error || event.message);
+  };
+  dom.window.addEventListener('error', onError);
+
   await act(async () => {
     form.setFieldValue('source', 'huggingface');
   });
   assert.equal(labels().includes('models.form.tos.endpoint'), false);
+  assert.equal(labels().includes('models.form.tos.connection'), false);
 
+  await act(async () => {
+    form.setFieldValue('source', 'model_scope');
+  });
+  assert.equal(labels().includes('models.form.tos.endpoint'), false);
+
+  await act(async () => {
+    form.setFieldValue('source', 'local_path');
+  });
+  assert.equal(labels().includes('models.form.tos.endpoint'), false);
+
+  await act(async () => {
+    form.setFieldValue('source', 'tos');
+  });
+  assert.ok(labels().includes('models.form.tos.endpoint'));
+  assert.ok(labels().includes('models.form.tos.connection'));
+  assert.equal(runtimeErrors.length, 0);
+
+  dom.window.removeEventListener('error', onError);
   await act(async () => root.unmount());
 });

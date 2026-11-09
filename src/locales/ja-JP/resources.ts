@@ -69,6 +69,8 @@ export default {
   'resources.modelfiles.form.localdir.tips':
     'デフォルトのストレージディレクトリは <span class="desc-block">/var/lib/gpustack/cache</span> または <span class="desc-block">--cache-dir</span>（優先）または <span class="desc-block">--data-dir</span> で指定されたディレクトリです。',
   'resources.modelfiles.retry.download': 'ダウンロードを再試行',
+  'resources.modelfiles.retry.archive': 'アーカイブを再試行',
+  'resources.modelfiles.archive': 'TOS へアーカイブ',
   'resources.modelfiles.storagePath.holder':
     'ダウンロード完了を待っています...',
   'resources.filter.worker': 'Workerでフィルタ',

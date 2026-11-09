@@ -65,10 +65,18 @@ function application(
     },
     '@/plugins/public-routes': { isPluginPublicPage: () => false },
     '@/request-config': { requestConfig: {} },
+    '@/utils/org-context': {
+      persistMyOrganizations() {},
+      getOrgAccessSnapshot: () => ({})
+    },
     '@/services/profile/apis': {
       queryCurrentUserState: async () => {
         calls.push('identity');
         return { id: 1, username: 'admin', is_admin: admin };
+      },
+      queryMyOrganizations: async () => {
+        calls.push('orgs');
+        return [];
       },
       queryVersionInfo: async () => {
         calls.push('version');
@@ -113,14 +121,14 @@ for (const permission of [false, 'error'] as const) {
     const app = application(permission);
     const state = await app.getInitialState();
     assert.equal(state.currentUser.username, 'admin');
-    assert.deepEqual(app.calls, ['version', 'identity']);
+    assert.deepEqual(app.calls, ['version', 'identity', 'orgs']);
     assert.equal(state.hasKubernetesCluster, undefined);
   });
   test(`SPA login skips administrator business requests (${permission})`, async () => {
     const app = application(permission, '/login');
     const state = await app.getInitialState();
     await state.fetchUserInfo();
-    assert.deepEqual(app.calls, ['version', 'identity']);
+    assert.deepEqual(app.calls, ['version', 'identity', 'orgs']);
   });
 }
 for (const permission of [true, 'oss'] as const) {
@@ -132,6 +140,7 @@ for (const permission of [true, 'oss'] as const) {
     assert.deepEqual(app.calls, [
       'version',
       'identity',
+      'orgs',
       'update',
       'config',
       'clusters',
@@ -146,6 +155,7 @@ test('non-admin normal access still probes capabilities without admin configurat
   assert.deepEqual(app.calls, [
     'version',
     'identity',
+    'orgs',
     'clusters',
     'resource-events',
     'marked'

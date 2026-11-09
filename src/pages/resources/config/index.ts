@@ -89,3 +89,19 @@ export const ModelfileState: any = {
   [ModelfileStateMap.Error]: StatusMaps.error,
   [ModelfileStateMap.Downloading]: StatusMaps.transitioning
 };
+
+export const ModelFileArchiveStateMap = {
+  queued: 'queued',
+  uploading: 'uploading',
+  verifying: 'verifying',
+  ready: 'ready',
+  error: 'error'
+};
+
+export const ModelFileArchiveState: any = {
+  [ModelFileArchiveStateMap.queued]: StatusMaps.transitioning,
+  [ModelFileArchiveStateMap.uploading]: StatusMaps.transitioning,
+  [ModelFileArchiveStateMap.verifying]: StatusMaps.transitioning,
+  [ModelFileArchiveStateMap.ready]: StatusMaps.success,
+  [ModelFileArchiveStateMap.error]: StatusMaps.error
+};

@@ -178,6 +178,82 @@ export default {
   'models.form.tos.ingest': 'Загрузить в TOS',
   'models.form.tos.ingest.success':
     'Релиз загружен. Проверьте поля и выполните развёртывание.',
+  'models.form.tos.ingest.serverOnly':
+    'Только серверный ingest (POST /v2/tos/releases). Это не архивирует кэш worker. Учётные данные — переменные TOS_* на сервере, ключи не вводите.',
+  'models.form.tos.connection': 'Подключение TOS',
+  'models.form.tos.version.unverified':
+    'Не удалось подтвердить версию через GET /tos/releases/detail. Проверьте подключение, модель и явную версию.',
+  'models.form.tos.version.verifyFailed':
+    'Не удалось проверить TOS-релиз для текущего подключения, модели и версии. Наличия в каталоге недостаточно — повторите после успешного detail.',
+  'models.form.tos.version.immutable':
+    'Версия явная и неизменяемая. Повтор той же пары connection/model/version даёт 409 concurrent_version. Для ERROR-задачи используйте retry, не создавайте новый архив.',
+  'models.form.tos.autoarchive': 'Архивировать в TOS после загрузки',
+  'models.form.tos.autoarchive.tips':
+    'По умолчанию выключено. Состояние архива независимо от загрузки: сбой архива не помечает загрузку как ошибку.',
+  'models.form.tos.archive.connection': 'Подключение TOS для архива',
+  'models.form.tos.archive.title': 'Архивировать в TOS',
+  'models.form.tos.archive.paths': 'Файлы',
+  'models.form.tos.archive.paths.tips':
+    'Пустое значение архивирует весь READY-каталог. Выберите относительные пути из списка READY-файлов (включая вложенные GGUF). Абсолютные пути отклоняются.',
+  'models.form.tos.archive.paths.directoryOnly':
+    'Для этого READY-кэша вложенные файлы не вернулись. Пустое значение архивирует весь каталог. Не вводите basename или локальный путь.',
+  'models.form.tos.archive.files.loading':
+    'Загрузка относительных файлов через GET /v2/model-files/{id}/files. UI не вызывает worker API и не передаёт локальный путь.',
+  'models.form.tos.archive.files.truncated':
+    'Список файлов обрезан (лимит сканирования 5000, perPage ≤ 200). Это не полный каталог. pagination.total — только число записей на этой странице.',
+  'models.form.tos.archive.files.not_ready':
+    'Файл модели ещё не READY (422 not_ready). Вложенные файлы недоступны. После READY можно архивировать весь каталог.',
+  'models.form.tos.archive.files.worker_unreachable':
+    'Назначенный worker недоступен (503 worker_unreachable). Вложенные файлы не перечислены. Это не пустой успех.',
+  'models.form.tos.archive.files.cache_missing':
+    'READY-кэш отсутствует на worker (422 cache_missing). Вложенные файлы не перечислены.',
+  'models.form.tos.archive.files.path_escape':
+    'Список содержит небезопасный путь (422 path_escape). Вложенные файлы не перечислены.',
+  'models.form.tos.archive.uniqueRetry':
+    'Для этой пары connection/model/version уже есть задача архива. Повторите её, не создавайте новую.',
+  'models.form.tos.archive.versionRetryRequired':
+    'Эта версия уже завершилась ошибкой. Повторите эту задачу (409 version_retry_required), не создавайте новую версию.',
+  'models.form.tos.archive.concurrentVersion':
+    'Эта пара connection/model/version уже выполняется (409 concurrent_version).',
+  'models.form.tos.archive.immutableConflict':
+    'Эта пара уже опубликована (409 immutable_conflict). Укажите новый tos_version.',
+  'models.form.tos.release.required':
+    'Выберите модель и явную версию из каталога. Ручной ввод tos_* не считается выбором артефакта.',
+  'models.form.tos.prefix': 'Префикс',
+  'models.form.tos.prefix.tips':
+    'Относительный префикс объектов, который Org может читать и писать. Непустой префикс не расширяется на весь бакет.',
+  'models.form.tos.prefix.empty':
+    'Пустой префикс — весь бакет. Это не значение по умолчанию. Отметьте «разрешить весь бакет», чтобы отправить allow_bucket_root=true.',
+  'models.form.tos.prefix.bucketRootRequired':
+    'Пустой префикс даёт весь бакет. Отметьте «разрешить весь бакет» или укажите относительный префикс.',
+  'models.form.tos.allowBucketRoot': 'Разрешить весь бакет',
+  'models.form.tos.allowBucketRoot.tips':
+    'Нужно только при пустом префиксе. Тогда catalog и ключи архива покрывают весь бакет. Не обходите изоляцию префикса.',
+  'models.form.tos.scope.prefix': 'prefix',
+  'models.form.tos.scope.bucket': 'bucket',
+  'models.form.tos.catalog.unverified': 'манифест не прочитан',
+  'models.form.tos.credentialMode': 'Режим учётных данных',
+  'models.form.tos.credentialMode.inline': 'Access key / secret key',
+  'models.form.tos.credentialMode.env':
+    'Окружение (TOS_* на control plane и worker)',
+  'models.form.tos.accessKey': 'Access key',
+  'models.form.tos.secretKey': 'Secret key',
+  'models.form.tos.securityToken': 'Security token',
+  'models.form.tos.credentialRef': 'Ссылка на учётные данные',
+  'models.form.tos.secret.placeholder':
+    'Оставьте пустым, чтобы сохранить секрет',
+  'models.form.tos.secret.tips':
+    'Только запись. Inline AK/SK/STS шифруются только GPUSTACK_TOS_SECRET_KEY (без JWT). Чтение возвращает маскированный access key. Без ключа — fail-closed. Не храните секреты в браузере и не отключайте уплотнение.',
+  'models.form.tos.env.endpoint.tips':
+    'Режим env сохраняет credential_ref=env. TOS_ACCESS_KEY / TOS_SECRET_KEY читаются на процессе, который вызывает TOS: worker для pull и архива, control plane для catalog, size и complete. Каждый процесс должен закрепить TOS_ENDPOINT или TOS_ALLOWED_ENDPOINTS на HTTPS-хост этого подключения. Inline ключи не падают в process env. Env только на worker хватает для pull/архива; catalog и проверка манифеста при деплое нуждаются в том же пине на CP либо в inline. Отсутствие пина даёт явную ошибку — не вставляйте plaintext и не отключайте проверку.',
+  'models.form.tos.connections.title': 'Подключение TOS',
+  'models.form.tos.connections.create': 'Добавить подключение TOS',
+  'models.form.tos.connections.edit': 'Изменить подключение TOS',
+  'models.form.tos.delete.remoteKeep':
+    'Удаление локального файла или развёртывания не удаляет удалённый TOS-релиз.',
+  'models.table.origin': 'Исходный источник',
+  'models.table.artifact': 'Артефакт TOS',
+  'models.table.archiveStatus': 'Статус архива',
   'models.form.filePath': 'Путь к модели',
   'models.form.backendVersion': 'Версия бэкенда',
   'models.form.backendVersion.tips':
