@@ -3,6 +3,7 @@ import { useIntl } from '@umijs/max';
 import { Button, Form, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { ingestTosRelease, queryTosSources } from '../apis';
+import ReleasePicker from '../components/tos/release-picker';
 import { DeployFormKeyMap, modelSourceMap } from '../config';
 import { useFormContext } from '../config/form-context';
 import {
@@ -13,30 +14,37 @@ import {
   tosSourceFields
 } from '../config/tos';
 import { FormData } from '../config/types';
+import {
+  backendOptionsMap,
+  BuiltInBackendOptions
+} from '../constants/backend-parameters';
 
 const TosSourceForm: React.FC = () => {
   const intl = useIntl();
   const form = Form.useFormInstance<FormData>();
   const { getRuleMessage } = useAppUtils();
-  const { formKey, onValuesChange } = useFormContext();
+  const { formKey, onValuesChange, onBackendChange, flatBackendOptions } =
+    useFormContext();
   const source = Form.useWatch('source', form);
+  const connectionId = Form.useWatch('tos_connection_id', form);
   const [fields, setFields] = useState<TosSourceField[]>(tosSourceFields);
   const [allowIngest, setAllowIngest] = useState(true);
   const [ingesting, setIngesting] = useState(false);
-  const sessionRef = useRef(0);
+  const sourcesSession = useRef(0);
 
   const visible =
     source === modelSourceMap.tos_value && formKey !== DeployFormKeyMap.CATALOG;
 
   useEffect(() => {
     if (!visible) {
-      sessionRef.current += 1;
+      sourcesSession.current += 1;
+      sourcesLoaded.current = false;
       return;
     }
-    const session = ++sessionRef.current;
+    const session = ++sourcesSession.current;
     queryTosSources()
       .then((res) => {
-        if (sessionRef.current !== session) {
+        if (sourcesSession.current !== session) {
           return;
         }
         const item = res?.items?.find(
@@ -49,10 +57,7 @@ const TosSourceForm: React.FC = () => {
           setAllowIngest(true);
         }
       })
-      .catch(() => {
-        // Keep the hardcoded TOS_SOURCE_FIELDS mirror when the endpoint
-        // is missing (older servers / this UI ahead of the backend PR).
-      });
+      .catch(() => undefined);
   }, [visible]);
 
   if (!visible) {
@@ -88,7 +93,8 @@ const TosSourceForm: React.FC = () => {
         tos_bucket: result.tos_bucket,
         tos_model: result.tos_model,
         tos_version: result.tos_version,
-        tos_release_path: result.tos_release_path
+        tos_release_path: result.tos_release_path,
+        tos_release_verified: true
       });
       message.success(
         intl.formatMessage({ id: 'models.form.tos.ingest.success' })
@@ -101,14 +107,31 @@ const TosSourceForm: React.FC = () => {
     }
   };
 
+  const coordinateRequired = !connectionId;
+
   return (
     <>
+      <ReleasePicker
+        onVerified={(verified, meta) => {
+          if (verified && meta?.gguf) {
+            const backend = form.getFieldValue('backend');
+            if (BuiltInBackendOptions.includes(backend)) {
+              form.setFieldValue('backend', backendOptionsMap.llamaBox);
+              const option = flatBackendOptions?.find(
+                (item) => item.value === backendOptionsMap.llamaBox
+              );
+              onBackendChange?.(backendOptionsMap.llamaBox, option);
+            }
+          }
+          onValuesChange?.({}, form.getFieldsValue());
+        }}
+      ></ReleasePicker>
       {fields.map((field) => (
         <Form.Item<FormData>
           name={field.name as keyof FormData}
           key={field.name}
           rules={
-            field.required
+            field.required && coordinateRequired
               ? [
                   {
                     required: true,
@@ -120,7 +143,7 @@ const TosSourceForm: React.FC = () => {
         >
           <CInput.Input
             allowClear
-            required={field.required}
+            required={Boolean(field.required && coordinateRequired)}
             label={intl.formatMessage({ id: field.label })}
             placeholder={field.placeholder}
             onBlur={handleOnBlur}
@@ -138,7 +161,7 @@ const TosSourceForm: React.FC = () => {
               label={intl.formatMessage({ id: 'models.form.tos.ingestPath' })}
               placeholder="/data/snapshots/qwen3"
               description={intl.formatMessage({
-                id: 'models.form.tos.ingestPath.tips'
+                id: 'models.form.tos.ingest.serverOnly'
               })}
             ></CInput.Input>
           </Form.Item>
@@ -154,6 +177,25 @@ const TosSourceForm: React.FC = () => {
           </Form.Item>
         </>
       )}
+      <Form.Item
+        name="tos_release_verified"
+        rules={[
+          {
+            validator: async (_: unknown, value: boolean) => {
+              if (!value) {
+                throw new Error(
+                  intl.formatMessage({
+                    id: 'models.form.tos.release.required'
+                  })
+                );
+              }
+            }
+          }
+        ]}
+        hidden
+      >
+        <input type="hidden" />
+      </Form.Item>
     </>
   );
 };

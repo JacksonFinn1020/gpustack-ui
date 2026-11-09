@@ -175,6 +175,44 @@ export default {
   'models.form.tos.ingest': 'TOS’a yükle',
   'models.form.tos.ingest.success':
     'Sürüm yüklendi. Alanları kontrol edip dağıtın.',
+  'models.form.tos.ingest.serverOnly':
+    'Yalnızca sunucu yerel ingest (POST /v2/tos/releases). Worker önbelleğini arşivlemez. Kimlik bilgileri sunucu TOS_* değişkenlerindedir — anahtar girmeyin.',
+  'models.form.tos.connection': 'TOS bağlantısı',
+  'models.form.tos.version.unverified':
+    'Bu sürüm bağlantı kataloğunda yok. Açık sürümü doğrulayın veya listeden seçin.',
+  'models.form.tos.version.immutable':
+    'Sürüm açık ve değişmez. Aynı bağlantı, model ve sürüm 409 concurrent_version döner.',
+  'models.form.tos.autoarchive': 'İndirmeden sonra TOS’a arşivle',
+  'models.form.tos.autoarchive.tips':
+    'Varsayılan kapalı. Arşiv durumu indirmeden bağımsızdır; arşiv hatası indirmeyi başarısız göstermez.',
+  'models.form.tos.archive.connection': 'Arşiv TOS bağlantısı',
+  'models.form.tos.archive.title': 'TOS’a arşivle',
+  'models.form.tos.archive.paths': 'Dosyalar',
+  'models.form.tos.archive.paths.tips':
+    'Boş bırakılırsa tüm READY dizin arşivlenir. Göreli dosya seçerek alt küme (ör. tek GGUF) arşivleyin.',
+  'models.form.tos.release.required':
+    'Katalogdan model ve açık sürüm seçin. Yalnızca tos_* yazmak sürüm seçimi sayılmaz.',
+  'models.form.tos.prefix': 'Önek',
+  'models.form.tos.credentialMode': 'Kimlik bilgisi modu',
+  'models.form.tos.credentialMode.inline': 'Access key / secret key',
+  'models.form.tos.credentialMode.env': 'Worker ortamı (TOS_*)',
+  'models.form.tos.accessKey': 'Access key',
+  'models.form.tos.secretKey': 'Secret key',
+  'models.form.tos.securityToken': 'Security token',
+  'models.form.tos.credentialRef': 'Kimlik bilgisi referansı',
+  'models.form.tos.secret.placeholder': 'Kayıtlı sırrı korumak için boş bırakın',
+  'models.form.tos.secret.tips':
+    'Yalnızca yazılır. Okuma maskelenmiş access key döner, secret asla dönmez. Sırlar tarayıcıya veya günlüğe yazılmaz.',
+  'models.form.tos.env.endpoint.tips':
+    'env modu atanan worker üzerindeki TOS_ACCESS_KEY / TOS_SECRET_KEY kullanır. Worker TOS_ENDPOINT veya TOS_ALLOWED_ENDPOINTS değerini bu bağlantıyla aynı HTTPS ana makineye ayarlamalıdır; aksi halde transport reddedilir. Bu denetimi atlamayın.',
+  'models.form.tos.connections.title': 'TOS bağlantısı',
+  'models.form.tos.connections.create': 'TOS bağlantısı ekle',
+  'models.form.tos.connections.edit': 'TOS bağlantısını düzenle',
+  'models.form.tos.delete.remoteKeep':
+    'Yerel dosya veya dağıtımı silmek uzak TOS sürümünü silmez.',
+  'models.table.origin': 'Orijinal kaynak',
+  'models.table.artifact': 'TOS artefaktı',
+  'models.table.archiveStatus': 'Arşiv durumu',
   'models.form.filePath': 'Model Yolu',
   'models.form.backendVersion': 'Altyapı Sürümü',
   'models.form.backendVersion.tips':

@@ -151,6 +151,20 @@ export interface ModelFile {
   tos_model?: string;
   tos_version?: string;
   tos_release_path?: string;
+  tos_connection_id?: number;
+  archive_state?: string | null;
+  archive_error_code?: string | null;
+  archive_error_message?: string | null;
+  provenance?: {
+    origin_source?: string;
+    origin_huggingface_repo_id?: string;
+    origin_huggingface_filename?: string;
+    origin_model_scope_model_id?: string;
+    origin_model_scope_file_path?: string;
+    origin_local_path?: string;
+    upstream_revision?: string;
+    artifact_uri?: string;
+  } | null;
   worker_id: number;
   owner_principal_id?: number | null;
   size: number;

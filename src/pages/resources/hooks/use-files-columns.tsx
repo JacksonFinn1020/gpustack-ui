@@ -1,6 +1,11 @@
 import { tableSorter } from '@/config/settings';
 import { modelSourceMap } from '@/pages/llmodels/config';
 import { modelFileActions } from '@/pages/llmodels/config/button-actions';
+import {
+  formatArtifactLocation,
+  formatOriginSource,
+  TosArchiveInFlight
+} from '@/pages/llmodels/config/tos';
 import { usePluginListColumns } from '@/plugins/list-extra-columns';
 import { convertFileSize } from '@/utils';
 import {
@@ -22,6 +27,8 @@ import _ from 'lodash';
 import { useMemo } from 'react';
 import styled from 'styled-components';
 import {
+  ModelFileArchiveState,
+  ModelFileArchiveStateMap,
   ModelfileState,
   ModelfileStateMap,
   ModelfileStateMapValue
@@ -100,6 +107,19 @@ const setActionList = (record: ListItem) => {
   return _.filter(modelFileActions, (item: { key: string }) => {
     if (item.key === 'deploy') {
       return record.state === ModelfileStateMap.Ready && !record.is_lora;
+    }
+    if (item.key === 'archive') {
+      return (
+        record.state === ModelfileStateMap.Ready &&
+        !record.is_lora &&
+        !TosArchiveInFlight.includes(record.archive_state as any)
+      );
+    }
+    if (item.key === 'retry') {
+      return record.state === ModelfileStateMap.Error;
+    }
+    if (item.key === 'retry-archive') {
+      return record.archive_state === ModelFileArchiveStateMap.error;
     }
     return true;
   });
@@ -294,6 +314,18 @@ const useFilesColumns = (props: {
     }));
     return [
       {
+        title: intl.formatMessage({ id: 'models.table.origin' }),
+        dataIndex: 'origin',
+        minWidth: 32,
+        render: (_text: string, record: ListItem) => (
+          <TextWrapper>
+            <AutoTooltip ghost title={formatOriginSource(record)}>
+              {formatOriginSource(record)}
+            </AutoTooltip>
+          </TextWrapper>
+        )
+      },
+      {
         title: intl.formatMessage({ id: 'models.form.source' }),
         dataIndex: 'source',
         sorter: tableSorter(1),
@@ -329,11 +361,51 @@ const useFilesColumns = (props: {
         }
       },
       {
+        title: intl.formatMessage({ id: 'models.table.artifact' }),
+        dataIndex: 'artifact',
+        minWidth: 32,
+        render: (_text: string, record: ListItem) => {
+          const location = formatArtifactLocation(record);
+          if (!record.tos_model && !record.provenance?.artifact_uri) {
+            return <span className="text-tertiary">-</span>;
+          }
+          return (
+            <TextWrapper>
+              <AutoTooltip ghost title={location}>
+                {location}
+              </AutoTooltip>
+            </TextWrapper>
+          );
+        }
+      },
+      {
         title: intl.formatMessage({ id: 'common.table.status' }),
         dataIndex: 'state',
         width: 160,
         render: (text: string, record: ListItem) => {
           return <InstanceStatusTag data={record} />;
+        }
+      },
+      {
+        title: intl.formatMessage({ id: 'models.table.archiveStatus' }),
+        dataIndex: 'archive_state',
+        width: 160,
+        render: (_text: string, record: ListItem) => {
+          if (!record.archive_state) {
+            return <span className="text-tertiary">-</span>;
+          }
+          return (
+            <StatusTag
+              statusValue={{
+                status: ModelFileArchiveState[record.archive_state],
+                text: record.archive_state,
+                message:
+                  record.archive_error_message ||
+                  record.archive_error_code ||
+                  ''
+              }}
+            />
+          );
         }
       },
       {

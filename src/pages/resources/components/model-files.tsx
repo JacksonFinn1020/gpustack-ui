@@ -4,13 +4,19 @@ import { PaginationKey, TABLE_SORT_DIRECTIONS } from '@/config/settings';
 import useTableFetch from '@/hooks/use-table-fetch';
 import PageBox from '@/pages/_components/page-box';
 import { createModel } from '@/pages/llmodels/apis';
+import { queryTosArchives, retryTosArchive } from '@/pages/llmodels/apis/tos';
 import DeployModal from '@/pages/llmodels/components/deployment/deploy-modal';
 import DownloadModal from '@/pages/llmodels/components/download';
+import ArchiveModal from '@/pages/llmodels/components/tos/archive-modal';
 import { modelSourceMap } from '@/pages/llmodels/config';
 import {
   modalConfig,
   onLineSourceOptions
 } from '@/pages/llmodels/config/button-actions';
+import {
+  buildModelFileDownloadPayload,
+  pickRetryableArchiveJob
+} from '@/pages/llmodels/config/tos';
 import { SourceType } from '@/pages/llmodels/config/types';
 import { backendOptionsMap } from '@/pages/llmodels/constants/backend-parameters';
 import useCheckBackend from '@/pages/llmodels/hooks/use-check-backend';
@@ -118,7 +124,7 @@ const ModelFiles = () => {
   const checkIsGGUF = (record: ListItem) => {
     const isGGUF = _.includes(record.resolved_paths?.[0], 'gguf');
     const isOllama = !!record.ollama_library_model_name;
-    return isGGUF || isOllama;
+    return isGGUF || isOllama || record.provenance?.gguf === true;
   };
 
   const getModelInfo = (record: ListItem) => {
@@ -141,12 +147,14 @@ const ModelFiles = () => {
     if (record.source === modelSourceMap.tos_value) {
       return {
         source: modelSourceMap.tos_value,
+        tos_connection_id: record.tos_connection_id,
         tos_endpoint: record.tos_endpoint,
         tos_region: record.tos_region,
         tos_bucket: record.tos_bucket,
         tos_model: record.tos_model,
         tos_version: record.tos_version,
-        tos_release_path: record.tos_release_path
+        tos_release_path: record.tos_release_path,
+        tos_release_verified: true
       };
     }
 
@@ -193,7 +201,10 @@ const ModelFiles = () => {
         isGGUF: !audioModelTag && isGGUF,
         isAudio: !!audioModelTag,
         gpuOptions: gpuOptions,
-        defaultBackend: backendOptionsMap.vllm
+        defaultBackend:
+          !audioModelTag && isGGUF
+            ? backendOptionsMap.llamaBox
+            : backendOptionsMap.vllm
       }),
       isGGUF: !audioModelTag && isGGUF
     };
@@ -217,6 +228,19 @@ const ModelFiles = () => {
       } else if (val === 'retry') {
         await retryDownloadModelFile(record.id);
         showSuccess();
+      } else if (val === 'retry-archive') {
+        const page = await queryTosArchives({
+          model_file_id: record.id,
+          perPage: 100
+        });
+        const job = pickRetryableArchiveJob(page.items || []);
+        if (!job) {
+          return;
+        }
+        await retryTosArchive(job.id);
+        showSuccess();
+      } else if (val === 'archive') {
+        setArchiveModal({ open: true, record });
       } else if (val === 'deploy') {
         saveScrollHeight();
 
@@ -272,9 +296,14 @@ const ModelFiles = () => {
     });
   };
 
+  const [archiveModal, setArchiveModal] = useState<{
+    open: boolean;
+    record?: ListItem | null;
+  }>({ open: false, record: null });
+
   const handleDownload = async (data: any) => {
     try {
-      await downloadModelFile(data);
+      await downloadModelFile(buildModelFileDownloadPayload(data));
       setDownlaodMoalStatus({
         ...downloadModalStatus,
         show: false
@@ -396,6 +425,12 @@ const ModelFiles = () => {
           workerOptions={readyWorkers}
           workersList={workersList}
         ></DownloadModal>
+        <ArchiveModal
+          open={archiveModal.open}
+          record={archiveModal.record}
+          onCancel={() => setArchiveModal({ open: false, record: null })}
+          onOk={fetchData}
+        ></ArchiveModal>
         <DeployModal
           deploymentType="modelFiles"
           title={intl.formatMessage({ id: 'models.button.deploy' })}

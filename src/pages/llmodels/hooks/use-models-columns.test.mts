@@ -84,6 +84,12 @@ mock.module(new URL('../config/index.ts', import.meta.url).href, {
 mock.module(new URL('../config/button-actions.ts', import.meta.url).href, {
   namedExports: { generateSource: () => '' }
 });
+mock.module(new URL('../config/tos.ts', import.meta.url).href, {
+  namedExports: {
+    formatArtifactLocation: () => '',
+    formatOriginSource: () => ''
+  }
+});
 mock.module(new URL('../components/pd/pd-markers.tsx', import.meta.url).href, {
   namedExports: { MarkerReasons: passChildren, markerTexts: () => [] }
 });

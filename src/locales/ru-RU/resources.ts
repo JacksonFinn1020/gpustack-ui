@@ -68,6 +68,8 @@ export default {
   'resources.modelfiles.form.localdir.tips':
     'Каталог хранения по умолчанию — <span class="desc-block">/var/lib/gpustack/cache</span>, или каталог, указанный с помощью <span class="desc-block">--cache-dir</span> (предпочтительно) или <span class="desc-block">--data-dir</span>.',
   'resources.modelfiles.retry.download': 'Повторить загрузку',
+  'resources.modelfiles.retry.archive': 'Повторить архивирование',
+  'resources.modelfiles.archive': 'Архивировать в TOS',
   'resources.modelfiles.storagePath.holder': 'Ожидание завершения загрузки...',
   'resources.filter.worker': 'Фильтровать по Worker',
   'resources.filter.source': 'Фильтровать по источнику',

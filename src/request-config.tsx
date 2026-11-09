@@ -51,11 +51,17 @@ export const requestConfig: RequestConfig = {
       // readable message instead of dumping the whole array.
       const detail = response?.data?.detail;
       const firstDetailMsg = getFastApiDetailMessage(detail);
-      const errMsg =
+      const errorCode =
+        response?.data?.details?.error_code || response?.data?.code;
+      const rawMsg =
         firstDetailMsg ||
         response?.data?.error?.message ||
         response?.data?.message ||
         errorMessage;
+      const errMsg =
+        errorCode && rawMsg && !String(rawMsg).includes(String(errorCode))
+          ? `${rawMsg} (${errorCode})`
+          : rawMsg;
 
       if (!opts?.skipErrorHandler && response?.status) {
         message.error({

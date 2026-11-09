@@ -220,6 +220,16 @@ const baseRoutes = [
         defaultIcon: 'icon-files',
         access: 'canSeeOrgAdmin',
         component: './resources/components/model-files'
+      },
+      {
+        name: 'tosConnections',
+        path: '/models/tos-connections',
+        key: 'tosConnections',
+        icon: 'icon-files',
+        selectedIcon: 'icon-files-filled',
+        defaultIcon: 'icon-files',
+        access: 'canSeeOrgAdmin',
+        component: './tos-connections/index'
       }
     ]
   },

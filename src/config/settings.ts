@@ -40,6 +40,7 @@ export const PaginationKey = {
   Benchmarks: 'Benchmarks',
   GPUs: 'GPUs',
   ModelFiles: 'ModelFiles',
+  TosConnections: 'TosConnections',
   Storage: 'Storage',
   Users: 'Users',
   APIKeys: 'APIKeys',

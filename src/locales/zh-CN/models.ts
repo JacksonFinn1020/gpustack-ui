@@ -168,6 +168,44 @@ export default {
     '可选。将 GPUStack 服务器上的目录（或已下载的快照）发布为 TOS release。凭证只使用服务器 TOS_* 环境变量，请勿在此填写访问密钥。',
   'models.form.tos.ingest': '上传到 TOS',
   'models.form.tos.ingest.success': '已写入 TOS，请确认字段后部署。',
+  'models.form.tos.ingest.serverOnly':
+    '仅服务器本地入库（POST /v2/tos/releases），不会归档 Worker 缓存。凭证只使用服务器 TOS_* 变量，请勿填写密钥。',
+  'models.form.tos.connection': 'TOS 连接',
+  'models.form.tos.version.unverified':
+    '该版本不在此连接的 catalog 中。请确认显式版本，或从列表中选择。',
+  'models.form.tos.version.immutable':
+    '版本必须显式且不可变。同一连接、模型与版本重复写入会返回 409 concurrent_version。',
+  'models.form.tos.autoarchive': '下载成功后归档到 TOS',
+  'models.form.tos.autoarchive.tips':
+    '默认关闭。归档状态与下载状态独立：归档失败不会把下载标成失败。',
+  'models.form.tos.archive.connection': '归档 TOS 连接',
+  'models.form.tos.archive.title': '归档到 TOS',
+  'models.form.tos.archive.paths': '文件',
+  'models.form.tos.archive.paths.tips':
+    '留空则归档整个 READY 目录。选择相对路径可只归档部分文件（例如单个 GGUF）。',
+  'models.form.tos.release.required':
+    '请从 catalog 选择模型并指定显式版本。仅手填 TOS 坐标不算已选制品。',
+  'models.form.tos.prefix': '前缀',
+  'models.form.tos.credentialMode': '凭证模式',
+  'models.form.tos.credentialMode.inline': 'Access Key / Secret Key',
+  'models.form.tos.credentialMode.env': 'Worker 环境变量（TOS_*）',
+  'models.form.tos.accessKey': 'Access Key',
+  'models.form.tos.secretKey': 'Secret Key',
+  'models.form.tos.securityToken': 'Security Token',
+  'models.form.tos.credentialRef': '凭证引用',
+  'models.form.tos.secret.placeholder': '留空则保留已存储的密钥',
+  'models.form.tos.secret.tips':
+    '只写。读取仅返回脱敏 Access Key，从不返回 Secret。密钥不会写入浏览器或日志。',
+  'models.form.tos.env.endpoint.tips':
+    'env 模式使用目标 Worker 上的 TOS_ACCESS_KEY / TOS_SECRET_KEY。Worker 必须配置 TOS_ENDPOINT 或 TOS_ALLOWED_ENDPOINTS，且与此连接的 HTTPS endpoint 一致，否则 transport 会被拒绝。请勿尝试绕过该校验。',
+  'models.form.tos.connections.title': 'TOS 连接',
+  'models.form.tos.connections.create': '添加 TOS 连接',
+  'models.form.tos.connections.edit': '编辑 TOS 连接',
+  'models.form.tos.delete.remoteKeep':
+    '删除本地文件或部署不会删除远端 TOS release。',
+  'models.table.origin': '原来源',
+  'models.table.artifact': 'TOS 制品',
+  'models.table.archiveStatus': '归档状态',
   'models.form.filePath': '模型路径',
   'models.form.backendVersion': '后端版本',
   'models.form.backendVersion.tips':

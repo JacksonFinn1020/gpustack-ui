@@ -178,6 +178,44 @@ export default {
   'models.form.tos.ingest': 'Загрузить в TOS',
   'models.form.tos.ingest.success':
     'Релиз загружен. Проверьте поля и выполните развёртывание.',
+  'models.form.tos.ingest.serverOnly':
+    'Только серверный ingest (POST /v2/tos/releases). Это не архивирует кэш worker. Учётные данные — переменные TOS_* на сервере, ключи не вводите.',
+  'models.form.tos.connection': 'Подключение TOS',
+  'models.form.tos.version.unverified':
+    'Этой версии нет в каталоге подключения. Укажите явную версию или выберите её из списка.',
+  'models.form.tos.version.immutable':
+    'Версия явная и неизменяемая. Повтор той же пары connection/model/version даёт 409 concurrent_version.',
+  'models.form.tos.autoarchive': 'Архивировать в TOS после загрузки',
+  'models.form.tos.autoarchive.tips':
+    'По умолчанию выключено. Состояние архива независимо от загрузки: сбой архива не помечает загрузку как ошибку.',
+  'models.form.tos.archive.connection': 'Подключение TOS для архива',
+  'models.form.tos.archive.title': 'Архивировать в TOS',
+  'models.form.tos.archive.paths': 'Файлы',
+  'models.form.tos.archive.paths.tips':
+    'Пустое значение архивирует весь READY-каталог. Выберите относительные пути, чтобы архивировать часть (например, один GGUF).',
+  'models.form.tos.release.required':
+    'Выберите модель и явную версию из каталога. Ручной ввод tos_* не считается выбором артефакта.',
+  'models.form.tos.prefix': 'Префикс',
+  'models.form.tos.credentialMode': 'Режим учётных данных',
+  'models.form.tos.credentialMode.inline': 'Access key / secret key',
+  'models.form.tos.credentialMode.env': 'Переменные окружения worker (TOS_*)',
+  'models.form.tos.accessKey': 'Access key',
+  'models.form.tos.secretKey': 'Secret key',
+  'models.form.tos.securityToken': 'Security token',
+  'models.form.tos.credentialRef': 'Ссылка на учётные данные',
+  'models.form.tos.secret.placeholder': 'Оставьте пустым, чтобы сохранить секрет',
+  'models.form.tos.secret.tips':
+    'Только запись. Чтение возвращает маскированный access key и никогда secret. Секреты не сохраняются в браузере и логах.',
+  'models.form.tos.env.endpoint.tips':
+    'Режим env использует TOS_ACCESS_KEY и TOS_SECRET_KEY на назначенном worker. Нужно задать TOS_ENDPOINT или TOS_ALLOWED_ENDPOINTS с тем же HTTPS-хостом, иначе transport будет отказан. Не обходите эту проверку.',
+  'models.form.tos.connections.title': 'Подключение TOS',
+  'models.form.tos.connections.create': 'Добавить подключение TOS',
+  'models.form.tos.connections.edit': 'Изменить подключение TOS',
+  'models.form.tos.delete.remoteKeep':
+    'Удаление локального файла или развёртывания не удаляет удалённый TOS-релиз.',
+  'models.table.origin': 'Исходный источник',
+  'models.table.artifact': 'Артефакт TOS',
+  'models.table.archiveStatus': 'Статус архива',
   'models.form.filePath': 'Путь к модели',
   'models.form.backendVersion': 'Версия бэкенда',
   'models.form.backendVersion.tips':

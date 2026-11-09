@@ -175,6 +175,44 @@ export default {
   'models.form.tos.ingest': 'Ingest to TOS',
   'models.form.tos.ingest.success':
     'Release ingested. Review the fields and deploy.',
+  'models.form.tos.ingest.serverOnly':
+    'Server-local ingest only (POST /v2/tos/releases). This does not archive a worker cache. Credentials stay on the server as TOS_* variables — do not enter keys here.',
+  'models.form.tos.connection': 'TOS connection',
+  'models.form.tos.version.unverified':
+    'This version is not in the connection catalog. Confirm the explicit version or pick one from the list.',
+  'models.form.tos.version.immutable':
+    'Version is explicit and immutable. Reusing the same connection, model, and version returns 409 concurrent_version.',
+  'models.form.tos.autoarchive': 'Archive to TOS after download',
+  'models.form.tos.autoarchive.tips':
+    'Off by default. Download state stays independent: an archive failure does not mark the download as failed.',
+  'models.form.tos.archive.connection': 'Archive TOS connection',
+  'models.form.tos.archive.title': 'Archive to TOS',
+  'models.form.tos.archive.paths': 'Files',
+  'models.form.tos.archive.paths.tips':
+    'Leave empty to archive the whole READY directory. Select relative files to archive a subset (for example a single GGUF).',
+  'models.form.tos.release.required':
+    'Select a catalog model and an explicit version. Typing TOS coordinates alone is not a selected artifact.',
+  'models.form.tos.prefix': 'Prefix',
+  'models.form.tos.credentialMode': 'Credential mode',
+  'models.form.tos.credentialMode.inline': 'Access key / secret key',
+  'models.form.tos.credentialMode.env': 'Worker environment (TOS_*)',
+  'models.form.tos.accessKey': 'Access key',
+  'models.form.tos.secretKey': 'Secret key',
+  'models.form.tos.securityToken': 'Security token',
+  'models.form.tos.credentialRef': 'Credential reference',
+  'models.form.tos.secret.placeholder': 'Leave blank to keep the stored secret',
+  'models.form.tos.secret.tips':
+    'Write-only. Reads return a redacted access key and never the secret. Secrets are not stored in the browser or logs.',
+  'models.form.tos.env.endpoint.tips':
+    'Env mode uses TOS_ACCESS_KEY and TOS_SECRET_KEY on the assigned worker. The worker must set TOS_ENDPOINT or TOS_ALLOWED_ENDPOINTS to the same HTTPS host as this connection; otherwise transport is refused. Do not try to bypass that check.',
+  'models.form.tos.connections.title': 'TOS connection',
+  'models.form.tos.connections.create': 'Add TOS Connection',
+  'models.form.tos.connections.edit': 'Edit TOS Connection',
+  'models.form.tos.delete.remoteKeep':
+    'Deleting a local file or deployment does not delete the remote TOS release.',
+  'models.table.origin': 'Original source',
+  'models.table.artifact': 'TOS artifact',
+  'models.table.archiveStatus': 'Archive status',
   'models.form.filePath': 'Model Path',
   'models.form.backendVersion': 'Backend Version',
   'models.form.backendVersion.tips':

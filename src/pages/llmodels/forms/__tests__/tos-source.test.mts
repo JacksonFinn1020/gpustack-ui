@@ -20,6 +20,9 @@ const InputField = ({ value, onChange, label }: any) =>
 mock.module('@gpustack/core-ui', {
   namedExports: {
     Input: { Input: InputField },
+    AutoComplete: InputField,
+    Select: InputField,
+    CheckboxField: InputField,
     useAppUtils: () => ({ getRuleMessage: (_: string, id: string) => id })
   }
 });
@@ -32,6 +35,13 @@ mock.module(new URL('../../apis/index.ts', import.meta.url).href, {
   namedExports: {
     queryTosSources: async () => ({ items: [] }),
     ingestTosRelease: async () => ({})
+  }
+});
+mock.module(new URL('../../apis/tos.ts', import.meta.url).href, {
+  namedExports: {
+    queryTosConnections: async () => ({ items: [], pagination: {} }),
+    queryTosReleaseCatalog: async () => [],
+    getTosReleaseDetail: async () => ({})
   }
 });
 mock.module(new URL('../../config/index.ts', import.meta.url).href, {
@@ -82,7 +92,13 @@ test('TOS source fields render, hide for other sources, and ingest path is optio
       { form, initialValues: { source: 'tos' } },
       createElement(
         FormContext.Provider,
-        { value: { formKey: 'deployment' } as any },
+        {
+          value: {
+            formKey: 'deployment',
+            onBackendChange: () => undefined,
+            flatBackendOptions: []
+          } as any
+        },
         createElement(TosSource),
         createElement(
           Form.Item,
