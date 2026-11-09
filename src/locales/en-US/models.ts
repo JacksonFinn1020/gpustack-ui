@@ -195,10 +195,28 @@ export default {
   'models.form.tos.archive.paths.directoryOnly':
     'This READY cache only lists a directory in resolved_paths, so nested files cannot be selected here. Archive the whole directory, or wait for a backend relative-file listing API. Do not type a basename or absolute path.',
   'models.form.tos.archive.uniqueRetry':
-    'This connection/model/version already has an archive job. Retry that job instead of creating a new one (409 concurrent_version).',
+    'This connection/model/version already has an archive job. Retry that job instead of creating a new one.',
+  'models.form.tos.archive.versionRetryRequired':
+    'This version already failed. Retry that archive job (409 version_retry_required). Do not create a new version.',
+  'models.form.tos.archive.concurrentVersion':
+    'This connection already has that model version in progress (409 concurrent_version).',
+  'models.form.tos.archive.immutableConflict':
+    'This connection already published that model version (409 immutable_conflict). Use a new tos_version.',
   'models.form.tos.release.required':
     'Select a catalog model and an explicit version. Typing TOS coordinates alone is not a selected artifact.',
   'models.form.tos.prefix': 'Prefix',
+  'models.form.tos.prefix.tips':
+    'Relative object prefix this Org may read and write. A non-empty prefix keeps that jail and is not expanded to the whole bucket.',
+  'models.form.tos.prefix.empty':
+    'Empty prefix is whole-bucket scope. That is not the default. Check Allow whole bucket to send allow_bucket_root=true.',
+  'models.form.tos.prefix.bucketRootRequired':
+    'Empty prefix grants the whole bucket. Check Allow whole bucket, or enter a relative prefix.',
+  'models.form.tos.allowBucketRoot': 'Allow whole bucket',
+  'models.form.tos.allowBucketRoot.tips':
+    'Required only when prefix is empty. Catalog and archive keys then span the entire bucket. Do not use this to bypass a prefix jail.',
+  'models.form.tos.scope.prefix': 'prefix',
+  'models.form.tos.scope.bucket': 'bucket',
+  'models.form.tos.catalog.unverified': 'manifest unread',
   'models.form.tos.credentialMode': 'Credential mode',
   'models.form.tos.credentialMode.inline': 'Access key / secret key',
   'models.form.tos.credentialMode.env': 'Environment (TOS_* on CP and workers)',
@@ -208,9 +226,9 @@ export default {
   'models.form.tos.credentialRef': 'Credential reference',
   'models.form.tos.secret.placeholder': 'Leave blank to keep the stored secret',
   'models.form.tos.secret.tips':
-    'Write-only. Reads return a redacted access key and never the secret. Secrets are not stored in the browser or logs.',
+    'Write-only. Inline AK/SK/STS are sealed at rest with GPUSTACK_TOS_SECRET_KEY only (not the JWT secret). Reads return a redacted access key and never the secret. Missing GPUSTACK_TOS_SECRET_KEY fails closed. Do not store secrets in the browser or logs, and do not turn sealing off.',
   'models.form.tos.env.endpoint.tips':
-    'Env mode stores credential_ref=env. Catalog (control plane) and worker pull currently resolve trusted endpoints separately; the backend is unifying that. Align TOS_ACCESS_KEY, TOS_SECRET_KEY, and TOS_ENDPOINT or TOS_ALLOWED_ENDPOINTS on the processes that serve catalog, download, and archive. Worker transport refuses a host mismatch. Setting worker env alone does not guarantee catalog or pull will work.',
+    'Env mode stores credential_ref=env. TOS_ACCESS_KEY / TOS_SECRET_KEY are read on the process that makes the TOS call: the assigned worker for pull and archive, the control plane for catalog, size, and complete verify. Each of those processes must pin TOS_ENDPOINT or TOS_ALLOWED_ENDPOINTS to this connection’s HTTPS host. Inline keys never fall back to process env. Worker-only env is enough for pull/archive; catalog and deploy-time manifest checks need the same pin on the control plane, or use inline. A missing pin returns an explicit error — do not paste plaintext keys into the catalog path or disable the check.',
   'models.form.tos.connections.title': 'TOS connection',
   'models.form.tos.connections.create': 'Add TOS Connection',
   'models.form.tos.connections.edit': 'Edit TOS Connection',

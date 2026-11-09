@@ -110,10 +110,14 @@ export async function getTosArchive(id: number) {
   });
 }
 
-export async function createTosArchive(data: TosArchiveJobCreate) {
+export async function createTosArchive(
+  data: TosArchiveJobCreate,
+  options?: { skipErrorHandler?: boolean }
+) {
   return request<TosArchiveJobPublic>(TOS_ARCHIVES_API, {
     method: 'POST',
-    data
+    data,
+    skipErrorHandler: options?.skipErrorHandler
   });
 }
 

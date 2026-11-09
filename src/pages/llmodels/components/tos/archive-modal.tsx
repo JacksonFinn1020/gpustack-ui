@@ -17,12 +17,10 @@ import {
 } from '../../apis/tos';
 import {
   archiveFileOptionsFromResolved,
-  matchArchiveJob,
   pickRetryableArchiveJob,
-  readTosErrorCode,
+  readTosErrorDetails,
   relativeArchivePaths,
   TosArchiveErrorCode,
-  TosArchiveInFlight,
   TosArchiveJobPublic,
   TosConnectionPublic
 } from '../../config/tos';
@@ -46,10 +44,6 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
   const { loading, guard, run, release } = useSubmitLock();
   const [connections, setConnections] = useState<TosConnectionPublic[]>([]);
   const [jobs, setJobs] = useState<TosArchiveJobPublic[]>([]);
-  const connectionId = Form.useWatch('tos_connection_id', form);
-  const tosModel = Form.useWatch('tos_model', form);
-  const tosVersion = Form.useWatch('tos_version', form);
-
   useEffect(() => {
     if (!open || !record?.id) {
       return;
@@ -74,15 +68,6 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
     };
   }, [open, record?.id]);
 
-  const matchingJob = matchArchiveJob(jobs, {
-    connection_id: connectionId,
-    tos_model: tosModel,
-    tos_version: tosVersion
-  });
-  const mustRetry =
-    matchingJob?.state === 'error' ||
-    TosArchiveInFlight.includes(matchingJob?.state as any);
-
   const handleCancel = () => {
     form.resetFields();
     setJobs([]);
@@ -96,43 +81,67 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
     }
     try {
       await run(async () => {
-        const existing = matchArchiveJob(jobs, {
-          connection_id: values.tos_connection_id,
-          tos_model: values.tos_model,
-          tos_version: values.tos_version
-        });
-        if (existing && existing.state === 'error') {
-          await retryTosArchive(existing.id);
-          return;
-        }
-        if (existing && TosArchiveInFlight.includes(existing.state as any)) {
-          const error = new Error('concurrent_version');
-          (error as any).data = {
-            details: { error_code: TosArchiveErrorCode.concurrent_version }
-          };
+        try {
+          await createTosArchive(
+            {
+              model_file_id: record.id,
+              connection_id: values.tos_connection_id,
+              tos_model: values.tos_model,
+              tos_version: values.tos_version,
+              paths: relativeArchivePaths(
+                record.resolved_paths || [],
+                values.paths?.length ? values.paths : null
+              )
+            },
+            { skipErrorHandler: true }
+          );
+        } catch (error) {
+          const details = readTosErrorDetails(error);
+          if (
+            details.error_code === TosArchiveErrorCode.version_retry_required &&
+            details.retry_job_id
+          ) {
+            await retryTosArchive(details.retry_job_id);
+            return;
+          }
           throw error;
         }
-        await createTosArchive({
-          model_file_id: record.id,
-          connection_id: values.tos_connection_id,
-          tos_model: values.tos_model,
-          tos_version: values.tos_version,
-          paths: relativeArchivePaths(
-            record.resolved_paths || [],
-            values.paths?.length ? values.paths : null
-          )
-        });
       });
       showSuccess();
       handleCancel();
       onOk();
     } catch (error) {
-      if (readTosErrorCode(error) === TosArchiveErrorCode.concurrent_version) {
+      const code = readTosErrorDetails(error).error_code;
+      if (code === TosArchiveErrorCode.version_retry_required) {
         form.setFields([
           {
             name: 'tos_version',
             errors: [
-              intl.formatMessage({ id: 'models.form.tos.archive.uniqueRetry' })
+              intl.formatMessage({
+                id: 'models.form.tos.archive.versionRetryRequired'
+              })
+            ]
+          }
+        ]);
+      } else if (code === TosArchiveErrorCode.concurrent_version) {
+        form.setFields([
+          {
+            name: 'tos_version',
+            errors: [
+              intl.formatMessage({
+                id: 'models.form.tos.archive.concurrentVersion'
+              })
+            ]
+          }
+        ]);
+      } else if (code === TosArchiveErrorCode.immutable_conflict) {
+        form.setFields([
+          {
+            name: 'tos_version',
+            errors: [
+              intl.formatMessage({
+                id: 'models.form.tos.archive.immutableConflict'
+              })
             ]
           }
         ]);
@@ -167,13 +176,13 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
           tos_version: retryable?.tos_version || record?.tos_version
         }}
       >
-        {mustRetry ? (
+        {retryable ? (
           <Alert
             type="warning"
             showIcon
             style={{ marginBottom: 16 }}
             message={intl.formatMessage({
-              id: 'models.form.tos.archive.uniqueRetry'
+              id: 'models.form.tos.archive.versionRetryRequired'
             })}
           />
         ) : null}

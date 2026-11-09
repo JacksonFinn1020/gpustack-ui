@@ -1,4 +1,7 @@
-import { TosConnectionPublic } from '@/pages/llmodels/config/tos';
+import {
+  connectionScope,
+  TosConnectionPublic
+} from '@/pages/llmodels/config/tos';
 import { AutoTooltip, DropdownButtons, icons } from '@gpustack/core-ui';
 import { useIntl } from '@umijs/max';
 import { ColumnsType } from 'antd/lib/table';
@@ -55,7 +58,21 @@ const useTosConnectionColumns = (props: {
       },
       {
         title: intl.formatMessage({ id: 'models.form.tos.prefix' }),
-        dataIndex: 'prefix'
+        dataIndex: 'prefix',
+        render: (text: string, record: TosConnectionPublic) => (
+          <AutoTooltip ghost>
+            <span>
+              {text || '—'} (
+              {intl.formatMessage({
+                id:
+                  connectionScope(record) === 'bucket'
+                    ? 'models.form.tos.scope.bucket'
+                    : 'models.form.tos.scope.prefix'
+              })}
+              )
+            </span>
+          </AutoTooltip>
+        )
       },
       {
         title: intl.formatMessage({ id: 'models.form.tos.credentialMode' }),

@@ -188,10 +188,28 @@ export default {
   'models.form.tos.archive.paths.directoryOnly':
     '当前 READY 缓存的 resolved_paths 只有目录，无法在此选择目录内文件。请归档整个目录，或等待后端提供相对文件清单接口。不要手填 basename 或绝对路径。',
   'models.form.tos.archive.uniqueRetry':
-    '该连接/模型/版本已有归档任务。请重试该任务，不要新建（会 409 concurrent_version）。',
+    '该连接/模型/版本已有归档任务。请重试该任务，不要新建。',
+  'models.form.tos.archive.versionRetryRequired':
+    '该版本已失败。请重试该归档任务（409 version_retry_required），不要新建版本。',
+  'models.form.tos.archive.concurrentVersion':
+    '该连接上该模型版本已在进行中（409 concurrent_version）。',
+  'models.form.tos.archive.immutableConflict':
+    '该连接已发布该模型版本（409 immutable_conflict）。请使用新的 tos_version。',
   'models.form.tos.release.required':
     '请从 catalog 选择模型并指定显式版本。仅手填 TOS 坐标不算已选制品。',
   'models.form.tos.prefix': '前缀',
+  'models.form.tos.prefix.tips':
+    '该 Org 可读写的相对对象前缀。非空前缀保持原有范围，不会扩大到整桶。',
+  'models.form.tos.prefix.empty':
+    '空前缀表示整桶范围，不是默认。勾选允许整桶才会提交 allow_bucket_root=true。',
+  'models.form.tos.prefix.bucketRootRequired':
+    '空前缀会授权整桶。请勾选允许整桶，或填写相对前缀。',
+  'models.form.tos.allowBucketRoot': '允许整桶',
+  'models.form.tos.allowBucketRoot.tips':
+    '仅在前缀为空时需要。启用后 catalog 与归档键覆盖整个桶。不要用它绕过前缀隔离。',
+  'models.form.tos.scope.prefix': '前缀范围',
+  'models.form.tos.scope.bucket': '整桶',
+  'models.form.tos.catalog.unverified': '清单未读',
   'models.form.tos.credentialMode': '凭证模式',
   'models.form.tos.credentialMode.inline': 'Access Key / Secret Key',
   'models.form.tos.credentialMode.env': '环境变量（控制面与 Worker 的 TOS_*）',
@@ -201,9 +219,9 @@ export default {
   'models.form.tos.credentialRef': '凭证引用',
   'models.form.tos.secret.placeholder': '留空则保留已存储的密钥',
   'models.form.tos.secret.tips':
-    '只写。读取仅返回脱敏 Access Key，从不返回 Secret。密钥不会写入浏览器或日志。',
+    '只写。Inline 的 AK/SK/STS 仅用 GPUSTACK_TOS_SECRET_KEY 密封（不再回落到 JWT secret）。读取只返回脱敏 Access Key。缺少 GPUSTACK_TOS_SECRET_KEY 会 fail-closed。不要写入浏览器或日志，也不要关闭密封。',
   'models.form.tos.env.endpoint.tips':
-    'env 模式只保存 credential_ref=env。Catalog（控制面）与 Worker pull 目前分别解析可信 endpoint，后端正在统一。请在提供 catalog、下载和归档的进程上对齐 TOS_ACCESS_KEY、TOS_SECRET_KEY，以及 TOS_ENDPOINT 或 TOS_ALLOWED_ENDPOINTS。Worker transport 在 host 不匹配时会拒绝。仅配置 Worker 环境变量不能保证 catalog 或 pull 可用。',
+    'env 模式只保存 credential_ref=env。TOS_ACCESS_KEY / TOS_SECRET_KEY 在实际发起 TOS 调用的进程上读取：Worker 用于 pull 与归档，控制面用于 catalog、size 与 complete 校验。这些进程都必须把 TOS_ENDPOINT 或 TOS_ALLOWED_ENDPOINTS 钉到本连接的 HTTPS host。Inline 密钥不会回落到进程 env。仅 Worker env 只够 pull/归档；catalog 与部署时清单校验需要控制面同样钉死，或改用 inline。缺少钉死会返回明确错误，不要改填明文或关闭校验。',
   'models.form.tos.connections.title': 'TOS 连接',
   'models.form.tos.connections.create': '添加 TOS 连接',
   'models.form.tos.connections.edit': '编辑 TOS 连接',

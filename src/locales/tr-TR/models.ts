@@ -195,10 +195,28 @@ export default {
   'models.form.tos.archive.paths.directoryOnly':
     'Bu READY önbelleğinin resolved_paths değeri yalnızca dizin; içindeki dosyalar seçilemez. Tüm dizini arşivleyin veya göreli dosya listesi API’sini bekleyin. Basename veya mutlak yol yazmayın.',
   'models.form.tos.archive.uniqueRetry':
-    'Bu bağlantı/model/sürüm için zaten bir arşiv işi var. Yenisini oluşturmayın, o işi yeniden deneyin (409 concurrent_version).',
+    'Bu bağlantı/model/sürüm için zaten bir arşiv işi var. Yenisini oluşturmayın, o işi yeniden deneyin.',
+  'models.form.tos.archive.versionRetryRequired':
+    'Bu sürüm zaten hata verdi. O arşiv işini yeniden deneyin (409 version_retry_required); yeni sürüm oluşturmayın.',
+  'models.form.tos.archive.concurrentVersion':
+    'Bu bağlantıda o model sürümü zaten sürüyor (409 concurrent_version).',
+  'models.form.tos.archive.immutableConflict':
+    'Bu bağlantı o model sürümünü zaten yayımladı (409 immutable_conflict). Yeni tos_version kullanın.',
   'models.form.tos.release.required':
     'Katalogdan model ve açık sürüm seçin. Yalnızca tos_* yazmak sürüm seçimi sayılmaz.',
   'models.form.tos.prefix': 'Önek',
+  'models.form.tos.prefix.tips':
+    'Bu Org’un okuyup yazabileceği göreli nesne öneki. Dolu önek tüm kovaya genişlemez.',
+  'models.form.tos.prefix.empty':
+    'Boş önek tüm kova kapsamıdır; varsayılan değildir. Tüm kovaya izin ver işaretlenirse allow_bucket_root=true gönderilir.',
+  'models.form.tos.prefix.bucketRootRequired':
+    'Boş önek tüm kovayı yetkilendirir. Tüm kovaya izin verin veya göreli önek girin.',
+  'models.form.tos.allowBucketRoot': 'Tüm kovaya izin ver',
+  'models.form.tos.allowBucketRoot.tips':
+    'Yalnızca önek boşken gerekir. Catalog ve arşiv anahtarları tüm kovayı kaplar. Önek izolasyonunu aşmak için kullanmayın.',
+  'models.form.tos.scope.prefix': 'önek',
+  'models.form.tos.scope.bucket': 'kova',
+  'models.form.tos.catalog.unverified': 'manifest okunamadı',
   'models.form.tos.credentialMode': 'Kimlik bilgisi modu',
   'models.form.tos.credentialMode.inline': 'Access key / secret key',
   'models.form.tos.credentialMode.env':
@@ -210,9 +228,9 @@ export default {
   'models.form.tos.secret.placeholder':
     'Kayıtlı sırrı korumak için boş bırakın',
   'models.form.tos.secret.tips':
-    'Yalnızca yazılır. Okuma maskelenmiş access key döner, secret asla dönmez. Sırlar tarayıcıya veya günlüğe yazılmaz.',
+    'Yalnızca yazılır. Inline AK/SK/STS yalnızca GPUSTACK_TOS_SECRET_KEY ile mühürlenir (JWT’ye düşmez). Okuma maskelenmiş access key döner. Anahtar yoksa fail-closed. Sırları tarayıcıya yazmayın, mühürlemeyi kapatmayın.',
   'models.form.tos.env.endpoint.tips':
-    'env modu yalnızca credential_ref=env kaydeder. Catalog (kontrol düzlemi) ve worker pull şu an güvenilir endpoint’i ayrı çözer; backend birleştiriyor. Catalog, indirme ve arşivi sunan süreçlerde TOS_ACCESS_KEY, TOS_SECRET_KEY ve TOS_ENDPOINT veya TOS_ALLOWED_ENDPOINTS değerlerini hizalayın. Worker transport host uyuşmazlığını reddeder. Yalnızca worker env, catalog veya pull’un çalışacağını garanti etmez.',
+    'env modu yalnızca credential_ref=env kaydeder. TOS_ACCESS_KEY / TOS_SECRET_KEY, TOS çağrısını yapan süreçte okunur: worker pull ve arşiv, kontrol düzlemi catalog, size ve complete doğrulaması. Her süreç TOS_ENDPOINT veya TOS_ALLOWED_ENDPOINTS değerini bu bağlantının HTTPS host’una sabitlemelidir. Inline anahtarlar süreç env’ine düşmez. Yalnızca worker env pull/arşiv için yeter; catalog ve dağıtım manifest denetimi CP’de aynı sabitlemeyi veya inline ister. Pin yoksa açık hata döner — düz metin yapıştırmayın, denetimi kapatmayın.',
   'models.form.tos.connections.title': 'TOS bağlantısı',
   'models.form.tos.connections.create': 'TOS bağlantısı ekle',
   'models.form.tos.connections.edit': 'TOS bağlantısını düzenle',

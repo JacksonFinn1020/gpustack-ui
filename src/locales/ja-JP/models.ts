@@ -198,10 +198,28 @@ export default {
   'models.form.tos.archive.paths.directoryOnly':
     'この READY キャッシュの resolved_paths はディレクトリのみで、配下ファイルは選べません。ディレクトリ全体をアーカイブするか、バックエンドの相対ファイル一覧 API を待ってください。basename や絶対パスを入力しないでください。',
   'models.form.tos.archive.uniqueRetry':
-    'この接続・モデル・バージョンには既にアーカイブジョブがあります。新規作成せず、そのジョブを再試行してください（409 concurrent_version）。',
+    'この接続・モデル・バージョンには既にアーカイブジョブがあります。新規作成せず再試行してください。',
+  'models.form.tos.archive.versionRetryRequired':
+    'このバージョンは既に失敗しています。そのアーカイブジョブを再試行し（409 version_retry_required）、新しいバージョンを作らないでください。',
+  'models.form.tos.archive.concurrentVersion':
+    'この接続にはそのモデルバージョンが進行中です（409 concurrent_version）。',
+  'models.form.tos.archive.immutableConflict':
+    'この接続は既にそのモデルバージョンを公開しています（409 immutable_conflict）。新しい tos_version を使ってください。',
   'models.form.tos.release.required':
     'カタログからモデルと明示バージョンを選択してください。TOS 座標の手入力だけでは成果物の選択になりません。',
   'models.form.tos.prefix': 'プレフィックス',
+  'models.form.tos.prefix.tips':
+    'この Org が読み書きできる相対オブジェクトプレフィックス。空でないプレフィックスはその範囲のまま、バケット全体へ拡大しません。',
+  'models.form.tos.prefix.empty':
+    '空のプレフィックスはバケット全体です。既定ではありません。バケット全体を許可すると allow_bucket_root=true を送ります。',
+  'models.form.tos.prefix.bucketRootRequired':
+    '空のプレフィックスはバケット全体を許可します。バケット全体を許可するか、相対プレフィックスを入力してください。',
+  'models.form.tos.allowBucketRoot': 'バケット全体を許可',
+  'models.form.tos.allowBucketRoot.tips':
+    'プレフィックスが空のときだけ必要です。カタログとアーカイブ鍵がバケット全体になります。プレフィックス隔離の迂回に使わないでください。',
+  'models.form.tos.scope.prefix': 'プレフィックス',
+  'models.form.tos.scope.bucket': 'バケット',
+  'models.form.tos.catalog.unverified': 'マニフェスト未読',
   'models.form.tos.credentialMode': '認証モード',
   'models.form.tos.credentialMode.inline': 'Access Key / Secret Key',
   'models.form.tos.credentialMode.env': '環境変数（CP と Worker の TOS_*）',
@@ -211,9 +229,9 @@ export default {
   'models.form.tos.credentialRef': '認証参照',
   'models.form.tos.secret.placeholder': '空欄のまま保存済みシークレットを維持',
   'models.form.tos.secret.tips':
-    '書き込み専用。読み取りではマスクされた Access Key のみ返し、Secret は返しません。ブラウザやログに保存しません。',
+    '書き込み専用。Inline の AK/SK/STS は GPUSTACK_TOS_SECRET_KEY のみで密封します（JWT secret にはフォールバックしません）。読み取りはマスクされた Access Key のみ。キー欠如は fail-closed。ブラウザやログに保存せず、密封を無効化しないでください。',
   'models.form.tos.env.endpoint.tips':
-    'env モードは credential_ref=env のみ保存します。Catalog（コントロールプレーン）と Worker pull は現在それぞれ信頼できる endpoint を解決しており、バックエンドが統一中です。catalog・ダウンロード・アーカイブを担うプロセスで TOS_ACCESS_KEY、TOS_SECRET_KEY、TOS_ENDPOINT または TOS_ALLOWED_ENDPOINTS を揃えてください。Worker transport はホスト不一致を拒否します。Worker 環境変数だけでは catalog や pull は保証されません。',
+    'env モードは credential_ref=env のみ保存します。TOS_ACCESS_KEY / TOS_SECRET_KEY は TOS 呼び出しを行うプロセスで読みます。Worker は pull とアーカイブ、コントロールプレーンは catalog・size・complete 検証です。各プロセスは TOS_ENDPOINT または TOS_ALLOWED_ENDPOINTS をこの接続の HTTPS ホストに固定する必要があります。Inline 鍵はプロセス env にフォールバックしません。Worker だけの env は pull/アーカイブに足り、catalog とデプロイ時マニフェスト検証には CP 側の同じ固定か inline が必要です。ピン欠如は明示エラーになります。平文を貼ったり検査を切ったりしないでください。',
   'models.form.tos.connections.title': 'TOS 接続',
   'models.form.tos.connections.create': 'TOS 接続を追加',
   'models.form.tos.connections.edit': 'TOS 接続を編集',

@@ -173,7 +173,12 @@ const ReleasePicker: React.FC<ReleasePickerProps> = ({
   const versionOptions = releases
     .filter((item) => item.tos_model === tosModel)
     .map((item) => ({
-      label: item.tos_version,
+      label:
+        item.catalog_verified === false
+          ? `${item.tos_version} (${intl.formatMessage({
+              id: 'models.form.tos.catalog.unverified'
+            })})`
+          : item.tos_version,
       value: item.tos_version
     }));
 

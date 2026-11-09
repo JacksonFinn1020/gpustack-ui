@@ -214,7 +214,8 @@ export const formatTosSource = (record: {
 
 export const TOS_WORKER_ONLY_PATHS = [
   '/tos/archives/{id}/transport',
-  '/tos/archives/{id}/complete'
+  '/tos/archives/{id}/complete',
+  '/tos/pull/{model_file_id}/transport'
 ] as const;
 
 export const TOS_UI_APIS = {
@@ -248,6 +249,7 @@ export const TosArchiveErrorCode = {
   incomplete_upload: 'incomplete_upload',
   immutable_conflict: 'immutable_conflict',
   concurrent_version: 'concurrent_version',
+  version_retry_required: 'version_retry_required',
   checksum_mismatch: 'checksum_mismatch',
   disk_full: 'disk_full',
   worker_unreachable: 'worker_unreachable',
@@ -257,7 +259,8 @@ export const TosArchiveErrorCode = {
   not_ready: 'not_ready',
   source_mismatch: 'source_mismatch',
   format_unsupported: 'format_unsupported',
-  connection_not_found: 'connection_not_found'
+  connection_not_found: 'connection_not_found',
+  manifest_mismatch: 'manifest_mismatch'
 } as const;
 
 export type TosProvenance = {
@@ -287,6 +290,8 @@ export type AutoArchiveSpec = {
   paths?: string[] | null;
 };
 
+export type TosConnectionScope = 'prefix' | 'bucket';
+
 export type TosConnectionPublic = {
   id: number;
   name: string;
@@ -294,6 +299,7 @@ export type TosConnectionPublic = {
   region: string;
   bucket: string;
   prefix: string;
+  scope?: TosConnectionScope | string;
   credential_mode: TosCredentialMode | string;
   credential_ref?: string | null;
   access_key?: string | null;
@@ -309,6 +315,7 @@ export type TosConnectionCreate = {
   region: string;
   bucket: string;
   prefix?: string;
+  allow_bucket_root?: boolean;
   credential_mode: TosCredentialMode | string;
   credential_ref?: string | null;
   access_key?: string;
@@ -327,6 +334,7 @@ export type TosReleaseListItem = {
   object_count?: number | null;
   total_bytes?: number | null;
   gguf?: boolean | null;
+  catalog_verified?: boolean;
 };
 
 export type TosReleaseFilePublic = {
@@ -416,6 +424,16 @@ export const versionsForModel = (
 export const isRedactedAccessKey = (value?: string | null) =>
   !value || value.includes('*');
 
+export const connectionScope = (record?: {
+  prefix?: string | null;
+  scope?: string | null;
+}) => {
+  if (record?.scope === 'bucket' || record?.scope === 'prefix') {
+    return record.scope;
+  }
+  return record?.prefix ? 'prefix' : 'bucket';
+};
+
 export const connectionFormInitialValues = (
   record?: Partial<TosConnectionPublic> | null
 ) => ({
@@ -424,25 +442,37 @@ export const connectionFormInitialValues = (
   region: record?.region,
   bucket: record?.bucket,
   prefix: record?.prefix ?? '',
+  allow_bucket_root: record ? connectionScope(record) === 'bucket' : false,
   credential_mode: record?.credential_mode || 'inline',
   credential_ref: record?.credential_ref,
   description: record?.description
 });
+
+export const EMPTY_PREFIX_REQUIRES_BUCKET_ROOT =
+  'empty prefix grants the whole bucket; set allow_bucket_root=true';
 
 export const buildConnectionWritePayload = (
   values: Record<string, any>,
   options?: { isCreate?: boolean }
 ): TosConnectionCreate => {
   const mode = values.credential_mode || 'inline';
+  const prefix = String(values.prefix ?? '').trim();
+  const allowBucketRoot = Boolean(values.allow_bucket_root);
+  if (!prefix && !allowBucketRoot) {
+    throw new Error(EMPTY_PREFIX_REQUIRES_BUCKET_ROOT);
+  }
   const payload: TosConnectionCreate = {
     name: values.name,
     endpoint: values.endpoint,
     region: values.region,
     bucket: values.bucket,
-    prefix: values.prefix ?? '',
+    prefix,
     credential_mode: mode,
     description: values.description || null
   };
+  if (!prefix && allowBucketRoot) {
+    payload.allow_bucket_root = true;
+  }
   if (mode === 'env') {
     payload.credential_ref = 'env';
     return payload;
@@ -493,19 +523,22 @@ export const buildTosSourcePayload = (values: Record<string, any>) => {
       payload.tos_release_path = values.tos_release_path;
     }
   }
-  const gguf = isTosGguf(values);
-  if (gguf) {
-    payload.provenance = {
-      ...(values.provenance || {}),
-      gguf: true
-    };
-  }
   return payload;
 };
 
+export const readTosErrorDetails = (error: any) => {
+  const details = error?.response?.data?.details || error?.data?.details || {};
+  return {
+    error_code: details.error_code as string | undefined,
+    retry_job_id: details.retry_job_id as number | undefined
+  };
+};
+
 export const readTosErrorCode = (error: any): string | undefined =>
-  error?.response?.data?.details?.error_code ||
-  error?.data?.details?.error_code;
+  readTosErrorDetails(error).error_code;
+
+export const catalogListIsNotDeployable = (_item?: TosReleaseListItem | null) =>
+  true;
 
 export const TosArchiveInFlight = [
   TosArchiveStateMap.queued,

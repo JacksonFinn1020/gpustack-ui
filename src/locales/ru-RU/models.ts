@@ -198,10 +198,28 @@ export default {
   'models.form.tos.archive.paths.directoryOnly':
     'В resolved_paths этого READY-кэша только каталог, поэтому вложенные файлы выбрать нельзя. Архивируйте весь каталог или дождитесь API списка относительных файлов. Не вводите basename или абсолютный путь.',
   'models.form.tos.archive.uniqueRetry':
-    'Для этой пары connection/model/version уже есть задача архива. Повторите её, не создавайте новую (409 concurrent_version).',
+    'Для этой пары connection/model/version уже есть задача архива. Повторите её, не создавайте новую.',
+  'models.form.tos.archive.versionRetryRequired':
+    'Эта версия уже завершилась ошибкой. Повторите эту задачу (409 version_retry_required), не создавайте новую версию.',
+  'models.form.tos.archive.concurrentVersion':
+    'Эта пара connection/model/version уже выполняется (409 concurrent_version).',
+  'models.form.tos.archive.immutableConflict':
+    'Эта пара уже опубликована (409 immutable_conflict). Укажите новый tos_version.',
   'models.form.tos.release.required':
     'Выберите модель и явную версию из каталога. Ручной ввод tos_* не считается выбором артефакта.',
   'models.form.tos.prefix': 'Префикс',
+  'models.form.tos.prefix.tips':
+    'Относительный префикс объектов, который Org может читать и писать. Непустой префикс не расширяется на весь бакет.',
+  'models.form.tos.prefix.empty':
+    'Пустой префикс — весь бакет. Это не значение по умолчанию. Отметьте «разрешить весь бакет», чтобы отправить allow_bucket_root=true.',
+  'models.form.tos.prefix.bucketRootRequired':
+    'Пустой префикс даёт весь бакет. Отметьте «разрешить весь бакет» или укажите относительный префикс.',
+  'models.form.tos.allowBucketRoot': 'Разрешить весь бакет',
+  'models.form.tos.allowBucketRoot.tips':
+    'Нужно только при пустом префиксе. Тогда catalog и ключи архива покрывают весь бакет. Не обходите изоляцию префикса.',
+  'models.form.tos.scope.prefix': 'prefix',
+  'models.form.tos.scope.bucket': 'bucket',
+  'models.form.tos.catalog.unverified': 'манифест не прочитан',
   'models.form.tos.credentialMode': 'Режим учётных данных',
   'models.form.tos.credentialMode.inline': 'Access key / secret key',
   'models.form.tos.credentialMode.env':
@@ -213,9 +231,9 @@ export default {
   'models.form.tos.secret.placeholder':
     'Оставьте пустым, чтобы сохранить секрет',
   'models.form.tos.secret.tips':
-    'Только запись. Чтение возвращает маскированный access key и никогда secret. Секреты не сохраняются в браузере и логах.',
+    'Только запись. Inline AK/SK/STS шифруются только GPUSTACK_TOS_SECRET_KEY (без JWT). Чтение возвращает маскированный access key. Без ключа — fail-closed. Не храните секреты в браузере и не отключайте уплотнение.',
   'models.form.tos.env.endpoint.tips':
-    'Режим env сохраняет credential_ref=env. Catalog (control plane) и worker pull сейчас по-разному резолвят доверенные endpoint; бэкенд унифицирует это. Согласуйте TOS_ACCESS_KEY, TOS_SECRET_KEY и TOS_ENDPOINT или TOS_ALLOWED_ENDPOINTS на процессах catalog, download и archive. Worker transport отклоняет несовпадение хоста. Только env на worker не гарантирует catalog или pull.',
+    'Режим env сохраняет credential_ref=env. TOS_ACCESS_KEY / TOS_SECRET_KEY читаются на процессе, который вызывает TOS: worker для pull и архива, control plane для catalog, size и complete. Каждый процесс должен закрепить TOS_ENDPOINT или TOS_ALLOWED_ENDPOINTS на HTTPS-хост этого подключения. Inline ключи не падают в process env. Env только на worker хватает для pull/архива; catalog и проверка манифеста при деплое нуждаются в том же пине на CP либо в inline. Отсутствие пина даёт явную ошибку — не вставляйте plaintext и не отключайте проверку.',
   'models.form.tos.connections.title': 'Подключение TOS',
   'models.form.tos.connections.create': 'Добавить подключение TOS',
   'models.form.tos.connections.edit': 'Изменить подключение TOS',

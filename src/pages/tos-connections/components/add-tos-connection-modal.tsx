@@ -7,9 +7,11 @@ import {
 import {
   buildConnectionWritePayload,
   connectionFormInitialValues,
+  EMPTY_PREFIX_REQUIRES_BUCKET_ROOT,
   TosConnectionPublic
 } from '@/pages/llmodels/config/tos';
 import {
+  CheckboxField,
   Input as CInput,
   FormDrawer,
   Select as SealSelect,
@@ -56,6 +58,9 @@ const AddTosConnectionModal: React.FC<AddModalProps> = ({
   const { loading, guard, run, release } = useSubmitLock();
   const isCreate = action === PageAction.CREATE;
   const credentialMode = Form.useWatch('credential_mode', form) || 'inline';
+  const prefix = Form.useWatch('prefix', form);
+  const allowBucketRoot = Form.useWatch('allow_bucket_root', form);
+  const prefixEmpty = !String(prefix ?? '').trim();
 
   const handleCancel = () => {
     form.resetFields();
@@ -75,7 +80,19 @@ const AddTosConnectionModal: React.FC<AddModalProps> = ({
       showSuccess();
       handleCancel();
       onOk();
-    } catch {
+    } catch (error: any) {
+      if (error?.message === EMPTY_PREFIX_REQUIRES_BUCKET_ROOT) {
+        form.setFields([
+          {
+            name: 'prefix',
+            errors: [
+              intl.formatMessage({
+                id: 'models.form.tos.prefix.bucketRootRequired'
+              })
+            ]
+          }
+        ]);
+      }
       release();
     }
   };
@@ -154,11 +171,43 @@ const AddTosConnectionModal: React.FC<AddModalProps> = ({
             label={intl.formatMessage({ id: 'models.form.tos.bucket' })}
           ></CInput.Input>
         </Form.Item>
-        <Form.Item name="prefix">
+        <Form.Item
+          name="prefix"
+          extra={
+            prefixEmpty
+              ? intl.formatMessage({ id: 'models.form.tos.prefix.empty' })
+              : intl.formatMessage({ id: 'models.form.tos.prefix.tips' })
+          }
+          rules={[
+            {
+              validator: async () => {
+                if (prefixEmpty && !allowBucketRoot) {
+                  throw new Error(
+                    intl.formatMessage({
+                      id: 'models.form.tos.prefix.bucketRootRequired'
+                    })
+                  );
+                }
+              }
+            }
+          ]}
+        >
           <CInput.Input
             label={intl.formatMessage({ id: 'models.form.tos.prefix' })}
           ></CInput.Input>
         </Form.Item>
+        {prefixEmpty ? (
+          <Form.Item name="allow_bucket_root" valuePropName="checked">
+            <CheckboxField
+              label={intl.formatMessage({
+                id: 'models.form.tos.allowBucketRoot'
+              })}
+              description={intl.formatMessage({
+                id: 'models.form.tos.allowBucketRoot.tips'
+              })}
+            ></CheckboxField>
+          </Form.Item>
+        ) : null}
         <Form.Item
           name="credential_mode"
           extra={

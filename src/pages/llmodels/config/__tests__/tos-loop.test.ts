@@ -9,10 +9,13 @@ import {
   canCreateTosArchive,
   canRetryTosArchive,
   catalogHitIsNotVerified,
+  catalogListIsNotDeployable,
   clearedTosReleaseFields,
   collectPaginatedItems,
   confirmTosReleaseDetail,
   connectionFormInitialValues,
+  connectionScope,
+  EMPTY_PREFIX_REQUIRES_BUCKET_ROOT,
   formatOriginSource,
   ggufFromReleaseDetail,
   hasTosCoordinates,
@@ -23,6 +26,7 @@ import {
   isTosGguf,
   matchArchiveJob,
   pickRetryableArchiveJob,
+  readTosErrorDetails,
   relativeArchivePaths,
   stripTosUiFields,
   TOS_UI_APIS,
@@ -42,6 +46,9 @@ test('connection catalog and archive APIs are owner routes, not worker transport
     TOS_WORKER_ONLY_PATHS.every(
       (path) => path.includes('transport') || path.includes('complete')
     )
+  );
+  assert.ok(
+    TOS_WORKER_ONLY_PATHS.includes('/tos/pull/{model_file_id}/transport')
   );
 });
 
@@ -131,6 +138,7 @@ test('connection form initial values never copy secrets or redacted keys', () =>
     endpoint: 'https://tos-cn-beijing.volces.com',
     region: 'cn-beijing',
     bucket: 'weights',
+    prefix: 'org-a',
     credential_mode: 'env'
   });
   assert.equal(envPayload.credential_ref, 'env');
@@ -142,6 +150,7 @@ test('connection form initial values never copy secrets or redacted keys', () =>
       endpoint: 'https://tos-cn-beijing.volces.com',
       region: 'cn-beijing',
       bucket: 'weights',
+      prefix: 'org-a',
       credential_mode: 'inline',
       access_key: 'AKLT***',
       secret_key: 'plain-secret'
@@ -150,6 +159,92 @@ test('connection form initial values never copy secrets or redacted keys', () =>
   );
   assert.equal(inline.access_key, undefined);
   assert.equal(inline.secret_key, 'plain-secret');
+  assert.equal(inline.allow_bucket_root, undefined);
+  assert.equal(initial.allow_bucket_root, false);
+});
+
+test('empty prefix requires explicit allow_bucket_root and does not expand a prefix', () => {
+  assert.throws(
+    () =>
+      buildConnectionWritePayload({
+        name: 'prod',
+        endpoint: 'https://tos-cn-beijing.volces.com',
+        region: 'cn-beijing',
+        bucket: 'weights',
+        prefix: '',
+        credential_mode: 'env'
+      }),
+    { message: EMPTY_PREFIX_REQUIRES_BUCKET_ROOT }
+  );
+  const bucketRoot = buildConnectionWritePayload({
+    name: 'prod',
+    endpoint: 'https://tos-cn-beijing.volces.com',
+    region: 'cn-beijing',
+    bucket: 'weights',
+    prefix: '  ',
+    allow_bucket_root: true,
+    credential_mode: 'env'
+  });
+  assert.equal(bucketRoot.prefix, '');
+  assert.equal(bucketRoot.allow_bucket_root, true);
+  assert.equal(connectionScope({ prefix: '', scope: 'bucket' }), 'bucket');
+  assert.equal(
+    connectionFormInitialValues({
+      prefix: '',
+      scope: 'bucket'
+    } as any).allow_bucket_root,
+    true
+  );
+  assert.equal(connectionFormInitialValues(null).allow_bucket_root, false);
+});
+
+test('catalog_verified false is listable but not a deployable hit', () => {
+  const unverified = {
+    connection_id: 1,
+    tos_model: 'qwen3',
+    tos_version: 'v1',
+    artifact_uri: 'tos://weights/qwen3/v1',
+    gguf: null,
+    object_count: null,
+    total_bytes: null,
+    catalog_verified: false
+  };
+  const verifiedMeta = {
+    ...unverified,
+    gguf: true,
+    object_count: 2,
+    total_bytes: 10,
+    catalog_verified: true
+  };
+  assert.equal(catalogListIsNotDeployable(unverified), true);
+  assert.equal(catalogListIsNotDeployable(verifiedMeta), true);
+  assert.equal(unverified.catalog_verified, false);
+  assert.equal(verifiedMeta.catalog_verified, true);
+  assert.equal(catalogHitIsNotVerified(verifiedMeta), false);
+  assert.equal(
+    hasVerifiedTosRelease({
+      tos_connection_id: 1,
+      tos_model: 'qwen3',
+      tos_version: 'v1',
+      tos_release_verified: true
+    }),
+    true
+  );
+});
+
+test('version_retry_required uses details.retry_job_id', () => {
+  const details = readTosErrorDetails({
+    response: {
+      data: {
+        details: {
+          error_code: 'version_retry_required',
+          retry_job_id: 44
+        }
+      }
+    }
+  });
+  assert.equal(details.error_code, 'version_retry_required');
+  assert.equal(details.retry_job_id, 44);
 });
 
 test('auto-archive is off unless explicitly enabled', () => {
@@ -193,7 +288,7 @@ test('download payload uses connection coordinates and strips UI-only fields', (
   assert.equal(payload.trust_remote_code, undefined);
   assert.equal(payload.auto_archive, undefined);
   assert.equal(payload.tos_gguf, undefined);
-  assert.equal((payload.provenance as { gguf?: boolean })?.gguf, true);
+  assert.equal(payload.provenance, undefined);
 });
 
 test('HF download can attach auto_archive without flipping download state fields', () => {
