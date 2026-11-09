@@ -1,21 +1,33 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  archiveFileOptionsFromResolved,
   buildAutoArchivePayload,
   buildConnectionWritePayload,
   buildModelFileDownloadPayload,
   buildTosSourcePayload,
+  canCreateTosArchive,
+  canRetryTosArchive,
+  catalogHitIsNotVerified,
   clearedTosReleaseFields,
+  collectPaginatedItems,
+  confirmTosReleaseDetail,
   connectionFormInitialValues,
+  formatOriginSource,
+  ggufFromReleaseDetail,
   hasTosCoordinates,
   hasVerifiedTosRelease,
+  isCurrentTosVerifyTarget,
   isRedactedAccessKey,
+  isSafeRelativeArchivePath,
   isTosGguf,
+  matchArchiveJob,
   pickRetryableArchiveJob,
   relativeArchivePaths,
   stripTosUiFields,
   TOS_UI_APIS,
-  TOS_WORKER_ONLY_PATHS
+  TOS_WORKER_ONLY_PATHS,
+  TosVerifyRequest
 } from '../tos';
 
 test('connection catalog and archive APIs are owner routes, not worker transport', () => {
@@ -181,6 +193,7 @@ test('download payload uses connection coordinates and strips UI-only fields', (
   assert.equal(payload.trust_remote_code, undefined);
   assert.equal(payload.auto_archive, undefined);
   assert.equal(payload.tos_gguf, undefined);
+  assert.equal((payload.provenance as { gguf?: boolean })?.gguf, true);
 });
 
 test('HF download can attach auto_archive without flipping download state fields', () => {
@@ -264,4 +277,268 @@ test('archive retry picks latest error job and relative paths stay relative', ()
     ['Llama-3-8B-Q4_K_M.gguf']
   );
   assert.equal(relativeArchivePaths(['/cache/model'], []), null);
+});
+
+test('catalog list hits are not treated as verified; GGUF comes from detail', () => {
+  assert.equal(
+    catalogHitIsNotVerified({
+      connection_id: 1,
+      tos_model: 'qwen3',
+      tos_version: 'v1',
+      artifact_uri: 'tos://bucket/qwen3/v1',
+      gguf: undefined
+    }),
+    false
+  );
+  assert.equal(
+    hasVerifiedTosRelease({
+      tos_connection_id: 1,
+      tos_model: 'qwen3',
+      tos_version: 'v1'
+    }),
+    false
+  );
+  assert.equal(
+    ggufFromReleaseDetail({
+      connection_id: 1,
+      bucket: 'weights',
+      prefix: '',
+      tos_model: 'qwen3',
+      tos_version: 'v1',
+      artifact_uri: 'tos://weights/qwen3/v1',
+      files: [{ path: 'weights/Llama-3-8B-Q4_K_M.gguf', size: 1, sha256: 'a' }],
+      total_bytes: 1,
+      gguf: false
+    }),
+    true
+  );
+  assert.equal(
+    ggufFromReleaseDetail({
+      connection_id: 1,
+      bucket: 'weights',
+      prefix: '',
+      tos_model: 'qwen3',
+      tos_version: 'v1',
+      artifact_uri: 'tos://weights/qwen3/v1',
+      files: [{ path: 'config.json', size: 1, sha256: 'a' }],
+      total_bytes: 1,
+      gguf: false,
+      provenance: { gguf: true }
+    }),
+    true
+  );
+  assert.equal(
+    ggufFromReleaseDetail({
+      connection_id: 1,
+      bucket: 'weights',
+      prefix: '',
+      tos_model: 'qwen3',
+      tos_version: 'v1',
+      artifact_uri: 'tos://weights/qwen3/v1',
+      files: [{ path: 'model.safetensors', size: 1, sha256: 'a' }],
+      total_bytes: 1,
+      gguf: false
+    }),
+    false
+  );
+});
+
+test('verify always uses detail; catalog gguf is ignored; HTTP and stale responses fail closed', async () => {
+  const listed = {
+    connection_id: 1,
+    tos_model: 'qwen3',
+    tos_version: 'v1',
+    artifact_uri: 'tos://weights/qwen3/v1'
+  };
+  assert.equal(catalogHitIsNotVerified(listed), false);
+  const calls: TosVerifyRequest[] = [];
+  const ok = await confirmTosReleaseDetail(
+    async (request) => {
+      calls.push(request);
+      return {
+        ...request,
+        bucket: 'weights',
+        prefix: '',
+        artifact_uri: listed.artifact_uri,
+        files: [{ path: 'weights/model.gguf', size: 1, sha256: 'a' }],
+        total_bytes: 1,
+        gguf: false
+      };
+    },
+    listed,
+    () => listed
+  );
+  assert.equal(calls.length, 1);
+  assert.equal(ok.verified, true);
+  assert.equal(ok.gguf, true);
+  let resolveLate!: (value: any) => void;
+  const pending = confirmTosReleaseDetail(
+    () =>
+      new Promise((resolve) => {
+        resolveLate = resolve;
+      }),
+    listed,
+    () => ({ ...listed, tos_version: 'v2' })
+  );
+  resolveLate({
+    ...listed,
+    bucket: 'weights',
+    prefix: '',
+    files: [],
+    total_bytes: 0,
+    gguf: true
+  });
+  const stale = await pending;
+  assert.equal(stale.stale, true);
+  assert.equal(stale.verified, false);
+  await assert.rejects(
+    confirmTosReleaseDetail(
+      async () => {
+        throw new Error('http 500');
+      },
+      listed,
+      () => listed
+    )
+  );
+});
+
+test('stale verify responses for another connection/model/version are ignored', () => {
+  const expected = {
+    connection_id: 2,
+    tos_model: 'qwen3',
+    tos_version: 'v1'
+  };
+  assert.equal(isCurrentTosVerifyTarget(expected, expected), true);
+  assert.equal(
+    isCurrentTosVerifyTarget(
+      { connection_id: 9, tos_model: 'qwen3', tos_version: 'v1' },
+      expected
+    ),
+    false
+  );
+  assert.equal(
+    isCurrentTosVerifyTarget(
+      { connection_id: 2, tos_model: 'qwen3', tos_version: 'v2' },
+      expected
+    ),
+    false
+  );
+});
+
+test('archive file options use nested relative paths and reject basename/absolute fakes', () => {
+  const options = archiveFileOptionsFromResolved([
+    '/cache/ready/weights/model.gguf',
+    '/cache/ready/config.json'
+  ]);
+  assert.deepEqual(
+    options.map((item) => item.value),
+    ['weights/model.gguf', 'config.json']
+  );
+  assert.deepEqual(
+    relativeArchivePaths(
+      ['/cache/ready/weights/model.gguf', '/cache/ready/config.json'],
+      ['weights/model.gguf']
+    ),
+    ['weights/model.gguf']
+  );
+  assert.equal(
+    relativeArchivePaths(
+      ['/cache/ready/weights/model.gguf', '/cache/ready/config.json'],
+      ['model.gguf']
+    ),
+    null
+  );
+  assert.equal(
+    relativeArchivePaths(['/cache/ready/weights/model.gguf'], ['/etc/passwd']),
+    null
+  );
+  assert.equal(isSafeRelativeArchivePath('../secret'), false);
+  assert.equal(isSafeRelativeArchivePath('/abs/model.gguf'), false);
+  assert.equal(archiveFileOptionsFromResolved(['/cache/ready/qwen']).length, 0);
+});
+
+test('ERROR unique version can only retry, not create another archive', () => {
+  assert.equal(
+    canCreateTosArchive({
+      state: 'ready',
+      archive_state: 'error',
+      is_lora: false
+    }),
+    false
+  );
+  assert.equal(canRetryTosArchive({ archive_state: 'error' }), true);
+  assert.equal(
+    canCreateTosArchive({
+      state: 'ready',
+      archive_state: null,
+      is_lora: false
+    }),
+    true
+  );
+  const existing = matchArchiveJob(
+    [
+      {
+        id: 4,
+        connection_id: 1,
+        tos_model: 'qwen3',
+        tos_version: 'v1',
+        state: 'error'
+      } as any
+    ],
+    { connection_id: 1, tos_model: 'qwen3', tos_version: 'v1' }
+  );
+  assert.equal(existing?.id, 4);
+});
+
+test('connection pagination collects every page instead of truncating at 100', async () => {
+  const pages = [
+    {
+      items: Array.from({ length: 100 }, (_, index) => ({ id: index + 1 })),
+      pagination: { page: 1, perPage: 100, total: 101, totalPage: 2 }
+    },
+    {
+      items: [{ id: 101 }],
+      pagination: { page: 2, perPage: 100, total: 101, totalPage: 2 }
+    }
+  ];
+  const items = await collectPaginatedItems(
+    async (page) => pages[page - 1] as any
+  );
+  assert.equal(items.length, 101);
+  assert.equal(items[100].id, 101);
+});
+
+test('TOS download origin is blank until provenance origin is filled', () => {
+  assert.equal(
+    formatOriginSource({
+      source: 'tos',
+      tos_model: 'qwen3',
+      tos_version: 'v1'
+    } as any),
+    ''
+  );
+  assert.equal(
+    formatOriginSource({
+      source: 'tos',
+      provenance: { origin_source: 'tos' }
+    }),
+    ''
+  );
+  assert.equal(
+    formatOriginSource({
+      source: 'tos',
+      provenance: {
+        origin_huggingface_repo_id: 'Qwen/Qwen3-8B',
+        origin_source: 'huggingface'
+      }
+    }),
+    'Hugging Face/Qwen/Qwen3-8B'
+  );
+  assert.equal(
+    formatOriginSource({
+      source: 'huggingface',
+      huggingface_repo_id: 'Qwen/Qwen3-8B'
+    }),
+    'Hugging Face/Qwen/Qwen3-8B'
+  );
 });

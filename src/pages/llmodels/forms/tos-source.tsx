@@ -38,7 +38,6 @@ const TosSourceForm: React.FC = () => {
   useEffect(() => {
     if (!visible) {
       sourcesSession.current += 1;
-      sourcesLoaded.current = false;
       return;
     }
     const session = ++sourcesSession.current;

@@ -4,7 +4,7 @@ import { PaginationKey, TABLE_SORT_DIRECTIONS } from '@/config/settings';
 import useTableFetch from '@/hooks/use-table-fetch';
 import PageBox from '@/pages/_components/page-box';
 import { createModel } from '@/pages/llmodels/apis';
-import { queryTosArchives, retryTosArchive } from '@/pages/llmodels/apis/tos';
+import { listAllTosArchives, retryTosArchive } from '@/pages/llmodels/apis/tos';
 import DeployModal from '@/pages/llmodels/components/deployment/deploy-modal';
 import DownloadModal from '@/pages/llmodels/components/download';
 import ArchiveModal from '@/pages/llmodels/components/tos/archive-modal';
@@ -14,7 +14,10 @@ import {
   onLineSourceOptions
 } from '@/pages/llmodels/config/button-actions';
 import {
+  TosArchiveInFlight,
+  TosArchiveJobPublic,
   buildModelFileDownloadPayload,
+  latestArchiveJob,
   pickRetryableArchiveJob
 } from '@/pages/llmodels/config/tos';
 import { SourceType } from '@/pages/llmodels/config/types';
@@ -229,11 +232,10 @@ const ModelFiles = () => {
         await retryDownloadModelFile(record.id);
         showSuccess();
       } else if (val === 'retry-archive') {
-        const page = await queryTosArchives({
-          model_file_id: record.id,
-          perPage: 100
+        const jobs = await listAllTosArchives({
+          model_file_id: record.id
         });
-        const job = pickRetryableArchiveJob(page.items || []);
+        const job = pickRetryableArchiveJob(jobs);
         if (!job) {
           return;
         }
@@ -300,6 +302,43 @@ const ModelFiles = () => {
     open: boolean;
     record?: ListItem | null;
   }>({ open: false, record: null });
+  const [archiveJobs, setArchiveJobs] = useState<
+    Record<number, TosArchiveJobPublic>
+  >({});
+
+  useEffect(() => {
+    const tracked = (dataSource.dataList || []).filter(
+      (item) =>
+        item.archive_state &&
+        (TosArchiveInFlight.includes(item.archive_state as any) ||
+          item.archive_state === 'error')
+    );
+    if (!tracked.length) {
+      setArchiveJobs({});
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      tracked.map((item) => listAllTosArchives({ model_file_id: item.id }))
+    )
+      .then((pages) => {
+        if (cancelled) {
+          return;
+        }
+        const next: Record<number, TosArchiveJobPublic> = {};
+        pages.forEach((jobs, index) => {
+          const latest = latestArchiveJob(jobs);
+          if (latest) {
+            next[tracked[index].id] = latest;
+          }
+        });
+        setArchiveJobs(next);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [dataSource.dataList]);
 
   const handleDownload = async (data: any) => {
     try {
@@ -352,7 +391,8 @@ const ModelFiles = () => {
   const columns = useFilesColumns({
     handleSelect,
     sortOrder,
-    workersList
+    workersList,
+    archiveJobs
   });
 
   const readyWorkers = useMemo(() => {

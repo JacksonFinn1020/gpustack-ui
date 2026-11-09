@@ -347,6 +347,7 @@ export type TosReleasePublic = {
   total_bytes: number;
   gguf: boolean;
   backend_hint?: string | null;
+  provenance?: TosProvenance | null;
 };
 
 export type TosArchiveJobPublic = {
@@ -492,6 +493,13 @@ export const buildTosSourcePayload = (values: Record<string, any>) => {
       payload.tos_release_path = values.tos_release_path;
     }
   }
+  const gguf = isTosGguf(values);
+  if (gguf) {
+    payload.provenance = {
+      ...(values.provenance || {}),
+      gguf: true
+    };
+  }
   return payload;
 };
 
@@ -505,6 +513,19 @@ export const TosArchiveInFlight = [
   TosArchiveStateMap.verifying
 ] as const;
 
+export const canCreateTosArchive = (record: {
+  state?: string;
+  is_lora?: boolean;
+  archive_state?: string | null;
+}) =>
+  record.state === 'ready' &&
+  !record.is_lora &&
+  !TosArchiveInFlight.includes(record.archive_state as any) &&
+  record.archive_state !== TosArchiveStateMap.error;
+
+export const canRetryTosArchive = (record: { archive_state?: string | null }) =>
+  record.archive_state === TosArchiveStateMap.error;
+
 export const pickRetryableArchiveJob = (
   jobs: TosArchiveJobPublic[] = []
 ): TosArchiveJobPublic | undefined => {
@@ -514,6 +535,116 @@ export const pickRetryableArchiveJob = (
   return retryable.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
 };
 
+export const TOS_PAGE_SIZE = 100;
+
+export const collectPaginatedItems = async <T>(
+  fetchPage: (page: number, perPage: number) => Promise<Paginated<T>>,
+  perPage = TOS_PAGE_SIZE
+): Promise<T[]> => {
+  const items: T[] = [];
+  let page = 1;
+  while (page <= 1000) {
+    const res = await fetchPage(page, perPage);
+    const batch = res?.items || [];
+    items.push(...batch);
+    const totalPage = res?.pagination?.totalPage;
+    const total = res?.pagination?.total;
+    if (typeof totalPage === 'number' && page >= totalPage) {
+      break;
+    }
+    if (typeof total === 'number' && items.length >= total) {
+      break;
+    }
+    if (batch.length < perPage) {
+      break;
+    }
+    page += 1;
+  }
+  return items;
+};
+
+export const normalizePosixPath = (value: string) =>
+  value.replace(/\\/g, '/').replace(/\/+$/, '');
+
+export const isSafeRelativeArchivePath = (value?: string | null) => {
+  if (!value) {
+    return false;
+  }
+  const posix = value.replace(/\\/g, '/');
+  if (
+    !posix ||
+    posix.startsWith('/') ||
+    posix.includes('://') ||
+    /^[A-Za-z]:/.test(posix)
+  ) {
+    return false;
+  }
+  const path = posix.replace(/\/+$/, '');
+  const parts = path.split('/');
+  return parts.every((part) => part && part !== '.' && part !== '..');
+};
+
+export const looksLikeResolvedFile = (value?: string | null) => {
+  if (!value || value.endsWith('/') || value.endsWith('\\')) {
+    return false;
+  }
+  const base = normalizePosixPath(value).split('/').pop() || '';
+  return base.includes('.');
+};
+
+const commonDirectory = (files: string[]) => {
+  const dirParts = files.map((file) => {
+    const parts = normalizePosixPath(file).split('/');
+    return parts.slice(0, -1);
+  });
+  if (!dirParts.length) {
+    return '';
+  }
+  let index = 0;
+  while (
+    dirParts[0][index] !== undefined &&
+    dirParts.every((parts) => parts[index] === dirParts[0][index])
+  ) {
+    index += 1;
+  }
+  const rootParts = dirParts[0].slice(0, index);
+  if (!rootParts.length) {
+    return '';
+  }
+  if (rootParts[0] === '') {
+    return `/${rootParts.slice(1).join('/')}`;
+  }
+  return rootParts.join('/');
+};
+
+export const relativePathUnderRoot = (absolute: string, root: string) => {
+  const file = normalizePosixPath(absolute);
+  const base = normalizePosixPath(root);
+  if (base && file.startsWith(`${base}/`)) {
+    return file.slice(base.length + 1);
+  }
+  return file.split('/').pop() || file;
+};
+
+export const archiveFileOptionsFromResolved = (
+  resolvedPaths: string[] = []
+) => {
+  const files = resolvedPaths.filter((path) => looksLikeResolvedFile(path));
+  if (!files.length) {
+    return [];
+  }
+  const root = commonDirectory(files);
+  const seen = new Set<string>();
+  return files.flatMap((abs) => {
+    const rel = relativePathUnderRoot(abs, root);
+    if (!isSafeRelativeArchivePath(rel) || seen.has(rel)) {
+      return [];
+    }
+    seen.add(rel);
+    return [{ label: rel, value: rel }];
+  });
+};
+
 export const relativeArchivePaths = (
   resolvedPaths: string[] = [],
   selected?: string[] | null
@@ -521,10 +652,73 @@ export const relativeArchivePaths = (
   if (!selected?.length) {
     return null;
   }
-  const names = resolvedPaths.map((path) => path.split(/[\\/]/).pop() || path);
-  return selected.filter(
-    (item) => names.includes(item) || resolvedPaths.includes(item)
+  const allowed = new Set(
+    archiveFileOptionsFromResolved(resolvedPaths).map((item) => item.value)
   );
+  const safe = selected.filter(
+    (item) => isSafeRelativeArchivePath(item) && allowed.has(item)
+  );
+  return safe.length ? safe : null;
+};
+
+export type TosVerifyRequest = {
+  connection_id: number;
+  tos_model: string;
+  tos_version: string;
+};
+
+export const isCurrentTosVerifyTarget = (
+  current: TosVerifyRequest | null | undefined,
+  expected: TosVerifyRequest
+) =>
+  Boolean(current) &&
+  current!.connection_id === expected.connection_id &&
+  current!.tos_model === expected.tos_model &&
+  current!.tos_version === expected.tos_version;
+
+export const ggufFromReleaseDetail = (detail?: TosReleasePublic | null) => {
+  if (!detail) {
+    return false;
+  }
+  if (detail.gguf === true || detail.provenance?.gguf === true) {
+    return true;
+  }
+  const files = detail.files || [];
+  if (files.some((file) => looksGgufPath(file.path))) {
+    return true;
+  }
+  return looksGgufPath(detail.tos_model) || looksGgufPath(detail.tos_version);
+};
+
+export const catalogHitIsNotVerified = (_listed?: TosReleaseListItem | null) =>
+  false;
+
+export const confirmTosReleaseDetail = async (
+  fetchDetail: (request: TosVerifyRequest) => Promise<TosReleasePublic>,
+  request: TosVerifyRequest,
+  current: () => TosVerifyRequest | null | undefined
+): Promise<{
+  stale: boolean;
+  verified: boolean;
+  gguf: boolean;
+  detail?: TosReleasePublic;
+}> => {
+  const detail = await fetchDetail(request);
+  if (!isCurrentTosVerifyTarget(current(), request)) {
+    return { stale: true, verified: false, gguf: false };
+  }
+  return {
+    stale: false,
+    verified: true,
+    gguf: ggufFromReleaseDetail(detail),
+    detail
+  };
+};
+
+const ORIGIN_SOURCE_LABEL: Record<string, string> = {
+  huggingface: 'Hugging Face',
+  model_scope: 'ModelScope',
+  local_path: 'Local Path'
 };
 
 export const formatOriginSource = (record: {
@@ -558,6 +752,16 @@ export const formatOriginSource = (record: {
   if (origin?.origin_local_path) {
     return origin.origin_local_path;
   }
+  if (
+    origin?.origin_source &&
+    origin.origin_source !== TOS_SOURCE &&
+    origin.origin_source !== 'tos'
+  ) {
+    return ORIGIN_SOURCE_LABEL[origin.origin_source] || origin.origin_source;
+  }
+  if (record.source === TOS_SOURCE) {
+    return '';
+  }
   if (record.huggingface_repo_id) {
     return `Hugging Face/${record.huggingface_repo_id}`;
   }
@@ -567,8 +771,26 @@ export const formatOriginSource = (record: {
   if (record.local_path) {
     return record.local_path;
   }
-  return origin?.origin_source || record.source || '';
+  return '';
 };
+
+export const matchArchiveJob = (
+  jobs: TosArchiveJobPublic[] = [],
+  values: {
+    connection_id?: number;
+    tos_model?: string;
+    tos_version?: string;
+  }
+) =>
+  jobs.find(
+    (job) =>
+      job.connection_id === values.connection_id &&
+      job.tos_model === values.tos_model &&
+      job.tos_version === values.tos_version
+  );
+
+export const latestArchiveJob = (jobs: TosArchiveJobPublic[] = []) =>
+  [...jobs].sort((a, b) => (b.id || 0) - (a.id || 0))[0];
 
 export const formatArtifactLocation = (record: {
   provenance?: TosProvenance | null;
@@ -607,7 +829,11 @@ export const buildModelFileDownloadPayload = (values: Record<string, any>) => {
   if (cleaned.source === TOS_SOURCE) {
     return {
       ...cleaned,
-      ...buildTosSourcePayload(cleaned),
+      ...buildTosSourcePayload({
+        ...cleaned,
+        tos_gguf: values.tos_gguf,
+        provenance: values.provenance
+      }),
       worker_id: workerId,
       local_dir: values.local_dir || undefined
     };

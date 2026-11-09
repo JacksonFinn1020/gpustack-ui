@@ -182,9 +182,11 @@ export default {
     'Только серверный ingest (POST /v2/tos/releases). Это не архивирует кэш worker. Учётные данные — переменные TOS_* на сервере, ключи не вводите.',
   'models.form.tos.connection': 'Подключение TOS',
   'models.form.tos.version.unverified':
-    'Этой версии нет в каталоге подключения. Укажите явную версию или выберите её из списка.',
+    'Не удалось подтвердить версию через GET /tos/releases/detail. Проверьте подключение, модель и явную версию.',
+  'models.form.tos.version.verifyFailed':
+    'Не удалось проверить TOS-релиз для текущего подключения, модели и версии. Наличия в каталоге недостаточно — повторите после успешного detail.',
   'models.form.tos.version.immutable':
-    'Версия явная и неизменяемая. Повтор той же пары connection/model/version даёт 409 concurrent_version.',
+    'Версия явная и неизменяемая. Повтор той же пары connection/model/version даёт 409 concurrent_version. Для ERROR-задачи используйте retry, не создавайте новый архив.',
   'models.form.tos.autoarchive': 'Архивировать в TOS после загрузки',
   'models.form.tos.autoarchive.tips':
     'По умолчанию выключено. Состояние архива независимо от загрузки: сбой архива не помечает загрузку как ошибку.',
@@ -192,22 +194,28 @@ export default {
   'models.form.tos.archive.title': 'Архивировать в TOS',
   'models.form.tos.archive.paths': 'Файлы',
   'models.form.tos.archive.paths.tips':
-    'Пустое значение архивирует весь READY-каталог. Выберите относительные пути, чтобы архивировать часть (например, один GGUF).',
+    'Пустое значение архивирует весь READY-каталог. Выберите относительные пути из списка READY-файлов (включая вложенные GGUF). Абсолютные пути отклоняются.',
+  'models.form.tos.archive.paths.directoryOnly':
+    'В resolved_paths этого READY-кэша только каталог, поэтому вложенные файлы выбрать нельзя. Архивируйте весь каталог или дождитесь API списка относительных файлов. Не вводите basename или абсолютный путь.',
+  'models.form.tos.archive.uniqueRetry':
+    'Для этой пары connection/model/version уже есть задача архива. Повторите её, не создавайте новую (409 concurrent_version).',
   'models.form.tos.release.required':
     'Выберите модель и явную версию из каталога. Ручной ввод tos_* не считается выбором артефакта.',
   'models.form.tos.prefix': 'Префикс',
   'models.form.tos.credentialMode': 'Режим учётных данных',
   'models.form.tos.credentialMode.inline': 'Access key / secret key',
-  'models.form.tos.credentialMode.env': 'Переменные окружения worker (TOS_*)',
+  'models.form.tos.credentialMode.env':
+    'Окружение (TOS_* на control plane и worker)',
   'models.form.tos.accessKey': 'Access key',
   'models.form.tos.secretKey': 'Secret key',
   'models.form.tos.securityToken': 'Security token',
   'models.form.tos.credentialRef': 'Ссылка на учётные данные',
-  'models.form.tos.secret.placeholder': 'Оставьте пустым, чтобы сохранить секрет',
+  'models.form.tos.secret.placeholder':
+    'Оставьте пустым, чтобы сохранить секрет',
   'models.form.tos.secret.tips':
     'Только запись. Чтение возвращает маскированный access key и никогда secret. Секреты не сохраняются в браузере и логах.',
   'models.form.tos.env.endpoint.tips':
-    'Режим env использует TOS_ACCESS_KEY и TOS_SECRET_KEY на назначенном worker. Нужно задать TOS_ENDPOINT или TOS_ALLOWED_ENDPOINTS с тем же HTTPS-хостом, иначе transport будет отказан. Не обходите эту проверку.',
+    'Режим env сохраняет credential_ref=env. Catalog (control plane) и worker pull сейчас по-разному резолвят доверенные endpoint; бэкенд унифицирует это. Согласуйте TOS_ACCESS_KEY, TOS_SECRET_KEY и TOS_ENDPOINT или TOS_ALLOWED_ENDPOINTS на процессах catalog, download и archive. Worker transport отклоняет несовпадение хоста. Только env на worker не гарантирует catalog или pull.',
   'models.form.tos.connections.title': 'Подключение TOS',
   'models.form.tos.connections.create': 'Добавить подключение TOS',
   'models.form.tos.connections.edit': 'Изменить подключение TOS',

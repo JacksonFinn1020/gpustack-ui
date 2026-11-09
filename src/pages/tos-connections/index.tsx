@@ -9,7 +9,7 @@ import {
 } from '@/pages/llmodels/apis/tos';
 import { TosConnectionPublic as ListItem } from '@/pages/llmodels/config/tos';
 import { DeleteModal, FilterBar, IconFont, NoResult } from '@gpustack/core-ui';
-import { useIntl } from '@umijs/max';
+import { useAccess, useIntl } from '@umijs/max';
 import useMemoizedFn from 'ahooks/lib/useMemoizedFn';
 import { ConfigProvider, Table } from 'antd';
 import { useState } from 'react';
@@ -18,6 +18,7 @@ import useTosConnectionColumns from './hooks/use-tos-connection-columns';
 
 const TosConnections = () => {
   const intl = useIntl();
+  const access = useAccess();
   const {
     TABLE_SORT_DIRECTIONS,
     dataSource,
@@ -73,6 +74,10 @@ const TosConnections = () => {
   });
 
   const columns = useTosConnectionColumns({ handleSelect });
+
+  if (!access?.canSeeOrgAdmin) {
+    return null;
+  }
 
   const renderEmpty = (type?: string) => {
     if (type !== 'Table') return;

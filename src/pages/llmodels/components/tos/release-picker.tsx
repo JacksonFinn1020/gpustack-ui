@@ -8,14 +8,17 @@ import { Form } from 'antd';
 import React, { useRef, useState } from 'react';
 import {
   getTosReleaseDetail,
-  queryTosConnections,
+  listAllTosConnections,
   queryTosReleaseCatalog
 } from '../../apis/tos';
 import {
   clearedTosReleaseFields,
+  confirmTosReleaseDetail,
   groupReleaseCatalog,
+  isCurrentTosVerifyTarget,
   TosConnectionPublic,
-  TosReleaseListItem
+  TosReleaseListItem,
+  TosVerifyRequest
 } from '../../config/tos';
 
 type ReleasePickerProps = {
@@ -42,9 +45,9 @@ const ReleasePicker: React.FC<ReleasePickerProps> = ({
       return;
     }
     loadedConnections.current = true;
-    queryTosConnections({ perPage: 100 })
-      .then((page) => {
-        setConnections(page.items || []);
+    listAllTosConnections()
+      .then((items) => {
+        setConnections(items);
       })
       .catch(() => {
         loadedConnections.current = false;
@@ -54,7 +57,10 @@ const ReleasePicker: React.FC<ReleasePickerProps> = ({
   const commitVerified = (verified: boolean, gguf?: boolean) => {
     form.setFieldsValue({
       tos_release_verified: verified || undefined,
-      tos_gguf: verified ? gguf : undefined
+      tos_gguf: verified ? gguf : undefined,
+      provenance: verified
+        ? { ...(form.getFieldValue('provenance') || {}), gguf: Boolean(gguf) }
+        : form.getFieldValue('provenance')
     });
     onVerified?.(verified, { gguf });
   };
@@ -83,6 +89,7 @@ const ReleasePicker: React.FC<ReleasePickerProps> = ({
   };
 
   const applyModel = (value?: string) => {
+    const session = ++sessionRef.current;
     form.setFieldsValue({
       tos_version: undefined,
       tos_release_verified: undefined,
@@ -97,6 +104,9 @@ const ReleasePicker: React.FC<ReleasePickerProps> = ({
           tos_model: value
         })
           .then((items) => {
+            if (sessionRef.current !== session) {
+              return;
+            }
             setReleases((prev) => {
               const rest = prev.filter((item) => item.tos_model !== value);
               return [...rest, ...(items || [])];
@@ -108,30 +118,38 @@ const ReleasePicker: React.FC<ReleasePickerProps> = ({
   };
 
   const verifyVersion = async (model?: string, version?: string) => {
-    if (!connectionId || !model || !version) {
+    const currentConnection = form.getFieldValue('tos_connection_id');
+    if (!currentConnection || !model || !version) {
       commitVerified(false);
       return;
     }
-    const listed = releases.find(
-      (item) => item.tos_model === model && item.tos_version === version
-    );
-    if (listed) {
-      commitVerified(true, Boolean(listed.gguf));
-      return;
-    }
+    const request: TosVerifyRequest = {
+      connection_id: currentConnection,
+      tos_model: model,
+      tos_version: version
+    };
+    commitVerified(false);
     const session = sessionRef.current;
+    const currentTarget = (): TosVerifyRequest => ({
+      connection_id: form.getFieldValue('tos_connection_id'),
+      tos_model: form.getFieldValue('tos_model'),
+      tos_version: form.getFieldValue('tos_version') || version
+    });
     try {
-      const detail = await getTosReleaseDetail({
-        connection_id: connectionId,
-        tos_model: model,
-        tos_version: version
-      });
-      if (sessionRef.current !== session) {
+      const result = await confirmTosReleaseDetail(
+        getTosReleaseDetail,
+        request,
+        currentTarget
+      );
+      if (sessionRef.current !== session || result.stale) {
         return;
       }
-      commitVerified(true, Boolean(detail?.gguf));
+      commitVerified(true, result.gguf);
     } catch {
-      if (sessionRef.current !== session) {
+      if (
+        sessionRef.current !== session ||
+        !isCurrentTosVerifyTarget(currentTarget(), request)
+      ) {
         return;
       }
       commitVerified(false);
@@ -139,7 +157,7 @@ const ReleasePicker: React.FC<ReleasePickerProps> = ({
         {
           name: 'tos_version',
           errors: [
-            intl.formatMessage({ id: 'models.form.tos.version.unverified' })
+            intl.formatMessage({ id: 'models.form.tos.version.verifyFailed' })
           ]
         }
       ]);
@@ -218,9 +236,15 @@ const ReleasePicker: React.FC<ReleasePickerProps> = ({
           label={intl.formatMessage({ id: 'models.form.tos.version' })}
           options={versionOptions}
           onBlur={(e: any) =>
-            verifyVersion(form.getFieldValue('tos_model'), e?.target?.value)
+            verifyVersion(
+              form.getFieldValue('tos_model'),
+              e?.target?.value || form.getFieldValue('tos_version')
+            )
           }
-          onChange={() => commitVerified(false)}
+          onChange={() => {
+            sessionRef.current += 1;
+            commitVerified(false);
+          }}
           onSelect={(value: string) =>
             verifyVersion(form.getFieldValue('tos_model'), value)
           }

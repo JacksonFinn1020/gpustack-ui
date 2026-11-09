@@ -172,9 +172,11 @@ export default {
     '仅服务器本地入库（POST /v2/tos/releases），不会归档 Worker 缓存。凭证只使用服务器 TOS_* 变量，请勿填写密钥。',
   'models.form.tos.connection': 'TOS 连接',
   'models.form.tos.version.unverified':
-    '该版本不在此连接的 catalog 中。请确认显式版本，或从列表中选择。',
+    '无法通过 GET /tos/releases/detail 确认该版本。请核对连接、模型与显式版本。',
+  'models.form.tos.version.verifyFailed':
+    '未能按当前连接/模型/版本校验 TOS 制品。仅 catalog 命中不能部署，请等 detail 成功后再试。',
   'models.form.tos.version.immutable':
-    '版本必须显式且不可变。同一连接、模型与版本重复写入会返回 409 concurrent_version。',
+    '版本必须显式且不可变。同一连接、模型与版本重复写入会返回 409 concurrent_version。已有 ERROR 任务请重试，不要再新建归档。',
   'models.form.tos.autoarchive': '下载成功后归档到 TOS',
   'models.form.tos.autoarchive.tips':
     '默认关闭。归档状态与下载状态独立：归档失败不会把下载标成失败。',
@@ -182,13 +184,17 @@ export default {
   'models.form.tos.archive.title': '归档到 TOS',
   'models.form.tos.archive.paths': '文件',
   'models.form.tos.archive.paths.tips':
-    '留空则归档整个 READY 目录。选择相对路径可只归档部分文件（例如单个 GGUF）。',
+    '留空则归档整个 READY 目录。从 READY 文件清单选择相对路径（含目录内 GGUF）。禁止绝对路径。',
+  'models.form.tos.archive.paths.directoryOnly':
+    '当前 READY 缓存的 resolved_paths 只有目录，无法在此选择目录内文件。请归档整个目录，或等待后端提供相对文件清单接口。不要手填 basename 或绝对路径。',
+  'models.form.tos.archive.uniqueRetry':
+    '该连接/模型/版本已有归档任务。请重试该任务，不要新建（会 409 concurrent_version）。',
   'models.form.tos.release.required':
     '请从 catalog 选择模型并指定显式版本。仅手填 TOS 坐标不算已选制品。',
   'models.form.tos.prefix': '前缀',
   'models.form.tos.credentialMode': '凭证模式',
   'models.form.tos.credentialMode.inline': 'Access Key / Secret Key',
-  'models.form.tos.credentialMode.env': 'Worker 环境变量（TOS_*）',
+  'models.form.tos.credentialMode.env': '环境变量（控制面与 Worker 的 TOS_*）',
   'models.form.tos.accessKey': 'Access Key',
   'models.form.tos.secretKey': 'Secret Key',
   'models.form.tos.securityToken': 'Security Token',
@@ -197,7 +203,7 @@ export default {
   'models.form.tos.secret.tips':
     '只写。读取仅返回脱敏 Access Key，从不返回 Secret。密钥不会写入浏览器或日志。',
   'models.form.tos.env.endpoint.tips':
-    'env 模式使用目标 Worker 上的 TOS_ACCESS_KEY / TOS_SECRET_KEY。Worker 必须配置 TOS_ENDPOINT 或 TOS_ALLOWED_ENDPOINTS，且与此连接的 HTTPS endpoint 一致，否则 transport 会被拒绝。请勿尝试绕过该校验。',
+    'env 模式只保存 credential_ref=env。Catalog（控制面）与 Worker pull 目前分别解析可信 endpoint，后端正在统一。请在提供 catalog、下载和归档的进程上对齐 TOS_ACCESS_KEY、TOS_SECRET_KEY，以及 TOS_ENDPOINT 或 TOS_ALLOWED_ENDPOINTS。Worker transport 在 host 不匹配时会拒绝。仅配置 Worker 环境变量不能保证 catalog 或 pull 可用。',
   'models.form.tos.connections.title': 'TOS 连接',
   'models.form.tos.connections.create': '添加 TOS 连接',
   'models.form.tos.connections.edit': '编辑 TOS 连接',

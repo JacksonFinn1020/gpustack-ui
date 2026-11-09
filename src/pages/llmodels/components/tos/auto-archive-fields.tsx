@@ -7,7 +7,7 @@ import {
 import { useIntl } from '@umijs/max';
 import { Form } from 'antd';
 import React, { useRef, useState } from 'react';
-import { queryTosConnections } from '../../apis/tos';
+import { listAllTosConnections } from '../../apis/tos';
 import { TosConnectionPublic } from '../../config/tos';
 
 const AutoArchiveFields: React.FC = () => {
@@ -23,8 +23,8 @@ const AutoArchiveFields: React.FC = () => {
       return;
     }
     loaded.current = true;
-    queryTosConnections({ perPage: 100 })
-      .then((page) => setConnections(page.items || []))
+    listAllTosConnections()
+      .then((items) => setConnections(items))
       .catch(() => {
         loaded.current = false;
       });

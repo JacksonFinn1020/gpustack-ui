@@ -1,5 +1,6 @@
 import { request } from '@umijs/max';
 import {
+  collectPaginatedItems,
   Paginated,
   TosArchiveJobCreate,
   TosArchiveJobPublic,
@@ -22,6 +23,12 @@ export async function queryTosConnections(params?: {
     method: 'GET',
     params
   });
+}
+
+export async function listAllTosConnections() {
+  return collectPaginatedItems((page, perPage) =>
+    queryTosConnections({ page, perPage })
+  );
 }
 
 export async function getTosConnection(id: number) {
@@ -85,6 +92,16 @@ export async function queryTosArchives(params?: {
     method: 'GET',
     params
   });
+}
+
+export async function listAllTosArchives(params?: {
+  worker_id?: number;
+  model_file_id?: number;
+  state?: string;
+}) {
+  return collectPaginatedItems((page, perPage) =>
+    queryTosArchives({ ...params, page, perPage })
+  );
 }
 
 export async function getTosArchive(id: number) {

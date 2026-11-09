@@ -179,9 +179,11 @@ export default {
     'Server-local ingest only (POST /v2/tos/releases). This does not archive a worker cache. Credentials stay on the server as TOS_* variables — do not enter keys here.',
   'models.form.tos.connection': 'TOS connection',
   'models.form.tos.version.unverified':
-    'This version is not in the connection catalog. Confirm the explicit version or pick one from the list.',
+    'This version could not be confirmed from GET /tos/releases/detail. Confirm the connection, model, and explicit version.',
+  'models.form.tos.version.verifyFailed':
+    'Could not verify this TOS release for the current connection, model, and version. Catalog presence is not enough — retry after the detail request succeeds.',
   'models.form.tos.version.immutable':
-    'Version is explicit and immutable. Reusing the same connection, model, and version returns 409 concurrent_version.',
+    'Version is explicit and immutable. Reusing the same connection, model, and version returns 409 concurrent_version. Retry the existing error job instead of creating another archive.',
   'models.form.tos.autoarchive': 'Archive to TOS after download',
   'models.form.tos.autoarchive.tips':
     'Off by default. Download state stays independent: an archive failure does not mark the download as failed.',
@@ -189,13 +191,17 @@ export default {
   'models.form.tos.archive.title': 'Archive to TOS',
   'models.form.tos.archive.paths': 'Files',
   'models.form.tos.archive.paths.tips':
-    'Leave empty to archive the whole READY directory. Select relative files to archive a subset (for example a single GGUF).',
+    'Leave empty to archive the whole READY directory. Select relative files from the READY file list (including nested GGUF paths). Absolute paths are rejected.',
+  'models.form.tos.archive.paths.directoryOnly':
+    'This READY cache only lists a directory in resolved_paths, so nested files cannot be selected here. Archive the whole directory, or wait for a backend relative-file listing API. Do not type a basename or absolute path.',
+  'models.form.tos.archive.uniqueRetry':
+    'This connection/model/version already has an archive job. Retry that job instead of creating a new one (409 concurrent_version).',
   'models.form.tos.release.required':
     'Select a catalog model and an explicit version. Typing TOS coordinates alone is not a selected artifact.',
   'models.form.tos.prefix': 'Prefix',
   'models.form.tos.credentialMode': 'Credential mode',
   'models.form.tos.credentialMode.inline': 'Access key / secret key',
-  'models.form.tos.credentialMode.env': 'Worker environment (TOS_*)',
+  'models.form.tos.credentialMode.env': 'Environment (TOS_* on CP and workers)',
   'models.form.tos.accessKey': 'Access key',
   'models.form.tos.secretKey': 'Secret key',
   'models.form.tos.securityToken': 'Security token',
@@ -204,7 +210,7 @@ export default {
   'models.form.tos.secret.tips':
     'Write-only. Reads return a redacted access key and never the secret. Secrets are not stored in the browser or logs.',
   'models.form.tos.env.endpoint.tips':
-    'Env mode uses TOS_ACCESS_KEY and TOS_SECRET_KEY on the assigned worker. The worker must set TOS_ENDPOINT or TOS_ALLOWED_ENDPOINTS to the same HTTPS host as this connection; otherwise transport is refused. Do not try to bypass that check.',
+    'Env mode stores credential_ref=env. Catalog (control plane) and worker pull currently resolve trusted endpoints separately; the backend is unifying that. Align TOS_ACCESS_KEY, TOS_SECRET_KEY, and TOS_ENDPOINT or TOS_ALLOWED_ENDPOINTS on the processes that serve catalog, download, and archive. Worker transport refuses a host mismatch. Setting worker env alone does not guarantee catalog or pull will work.',
   'models.form.tos.connections.title': 'TOS connection',
   'models.form.tos.connections.create': 'Add TOS Connection',
   'models.form.tos.connections.edit': 'Edit TOS Connection',

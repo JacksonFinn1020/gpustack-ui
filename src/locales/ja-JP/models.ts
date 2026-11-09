@@ -182,9 +182,11 @@ export default {
     'サーバー上のローカル取り込みのみ（POST /v2/tos/releases）。Worker キャッシュのアーカイブではありません。認証情報はサーバーの TOS_* 変数を使い、キーは入力しないでください。',
   'models.form.tos.connection': 'TOS 接続',
   'models.form.tos.version.unverified':
-    'このバージョンはこの接続のカタログにありません。明示バージョンを確認するか、一覧から選択してください。',
+    'GET /tos/releases/detail でこのバージョンを確認できませんでした。接続、モデル、明示バージョンを確認してください。',
+  'models.form.tos.version.verifyFailed':
+    '現在の接続・モデル・バージョンの TOS 成果物を検証できませんでした。カタログにあるだけではデプロイできません。detail 成功後に再試行してください。',
   'models.form.tos.version.immutable':
-    'バージョンは明示的で不変です。同じ接続・モデル・バージョンの再利用は 409 concurrent_version になります。',
+    'バージョンは明示的で不変です。同じ接続・モデル・バージョンの再利用は 409 concurrent_version になります。ERROR ジョブは再試行し、新規アーカイブは作らないでください。',
   'models.form.tos.autoarchive': 'ダウンロード後に TOS へアーカイブ',
   'models.form.tos.autoarchive.tips':
     '既定はオフ。アーカイブ状態はダウンロード状態と独立し、アーカイブ失敗でダウンロード失敗にはなりません。',
@@ -192,13 +194,17 @@ export default {
   'models.form.tos.archive.title': 'TOS へアーカイブ',
   'models.form.tos.archive.paths': 'ファイル',
   'models.form.tos.archive.paths.tips':
-    '空なら READY ディレクトリ全体をアーカイブします。相対パスを選ぶと一部（例: 単一 GGUF）だけアーカイブします。',
+    '空なら READY ディレクトリ全体をアーカイブします。READY ファイル一覧から相対パス（ネストした GGUF を含む）を選びます。絶対パスは拒否されます。',
+  'models.form.tos.archive.paths.directoryOnly':
+    'この READY キャッシュの resolved_paths はディレクトリのみで、配下ファイルは選べません。ディレクトリ全体をアーカイブするか、バックエンドの相対ファイル一覧 API を待ってください。basename や絶対パスを入力しないでください。',
+  'models.form.tos.archive.uniqueRetry':
+    'この接続・モデル・バージョンには既にアーカイブジョブがあります。新規作成せず、そのジョブを再試行してください（409 concurrent_version）。',
   'models.form.tos.release.required':
     'カタログからモデルと明示バージョンを選択してください。TOS 座標の手入力だけでは成果物の選択になりません。',
   'models.form.tos.prefix': 'プレフィックス',
   'models.form.tos.credentialMode': '認証モード',
   'models.form.tos.credentialMode.inline': 'Access Key / Secret Key',
-  'models.form.tos.credentialMode.env': 'Worker 環境変数 (TOS_*)',
+  'models.form.tos.credentialMode.env': '環境変数（CP と Worker の TOS_*）',
   'models.form.tos.accessKey': 'Access Key',
   'models.form.tos.secretKey': 'Secret Key',
   'models.form.tos.securityToken': 'Security Token',
@@ -207,7 +213,7 @@ export default {
   'models.form.tos.secret.tips':
     '書き込み専用。読み取りではマスクされた Access Key のみ返し、Secret は返しません。ブラウザやログに保存しません。',
   'models.form.tos.env.endpoint.tips':
-    'env モードは割り当て Worker の TOS_ACCESS_KEY / TOS_SECRET_KEY を使います。Worker は TOS_ENDPOINT または TOS_ALLOWED_ENDPOINTS をこの接続と同じ HTTPS ホストに設定する必要があります。一致しないと transport は拒否されます。この検査を迂回しないでください。',
+    'env モードは credential_ref=env のみ保存します。Catalog（コントロールプレーン）と Worker pull は現在それぞれ信頼できる endpoint を解決しており、バックエンドが統一中です。catalog・ダウンロード・アーカイブを担うプロセスで TOS_ACCESS_KEY、TOS_SECRET_KEY、TOS_ENDPOINT または TOS_ALLOWED_ENDPOINTS を揃えてください。Worker transport はホスト不一致を拒否します。Worker 環境変数だけでは catalog や pull は保証されません。',
   'models.form.tos.connections.title': 'TOS 接続',
   'models.form.tos.connections.create': 'TOS 接続を追加',
   'models.form.tos.connections.edit': 'TOS 接続を編集',

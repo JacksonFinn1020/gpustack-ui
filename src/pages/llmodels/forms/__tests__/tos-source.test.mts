@@ -40,6 +40,7 @@ mock.module(new URL('../../apis/index.ts', import.meta.url).href, {
 mock.module(new URL('../../apis/tos.ts', import.meta.url).href, {
   namedExports: {
     queryTosConnections: async () => ({ items: [], pagination: {} }),
+    listAllTosConnections: async () => [],
     queryTosReleaseCatalog: async () => [],
     getTosReleaseDetail: async () => ({})
   }
@@ -146,10 +147,35 @@ test('TOS source fields render, hide for other sources, and ingest path is optio
   assert.equal(values.tos_model, 'qwen3');
   assert.equal(values.tos_ingest_local_path, undefined);
 
+  const runtimeErrors: unknown[] = [];
+  const onError = (event: ErrorEvent) => {
+    runtimeErrors.push(event.error || event.message);
+  };
+  dom.window.addEventListener('error', onError);
+
   await act(async () => {
     form.setFieldValue('source', 'huggingface');
   });
   assert.equal(labels().includes('models.form.tos.endpoint'), false);
+  assert.equal(labels().includes('models.form.tos.connection'), false);
 
+  await act(async () => {
+    form.setFieldValue('source', 'model_scope');
+  });
+  assert.equal(labels().includes('models.form.tos.endpoint'), false);
+
+  await act(async () => {
+    form.setFieldValue('source', 'local_path');
+  });
+  assert.equal(labels().includes('models.form.tos.endpoint'), false);
+
+  await act(async () => {
+    form.setFieldValue('source', 'tos');
+  });
+  assert.ok(labels().includes('models.form.tos.endpoint'));
+  assert.ok(labels().includes('models.form.tos.connection'));
+  assert.equal(runtimeErrors.length, 0);
+
+  dom.window.removeEventListener('error', onError);
   await act(async () => root.unmount());
 });

@@ -7,10 +7,25 @@ import {
   useSubmitLock
 } from '@gpustack/core-ui';
 import { useIntl } from '@umijs/max';
-import { Form } from 'antd';
-import React, { useRef, useState } from 'react';
-import { createTosArchive, queryTosConnections } from '../../apis/tos';
-import { relativeArchivePaths, TosConnectionPublic } from '../../config/tos';
+import { Alert, Form } from 'antd';
+import React, { useEffect, useState } from 'react';
+import {
+  createTosArchive,
+  listAllTosArchives,
+  listAllTosConnections,
+  retryTosArchive
+} from '../../apis/tos';
+import {
+  archiveFileOptionsFromResolved,
+  matchArchiveJob,
+  pickRetryableArchiveJob,
+  readTosErrorCode,
+  relativeArchivePaths,
+  TosArchiveErrorCode,
+  TosArchiveInFlight,
+  TosArchiveJobPublic,
+  TosConnectionPublic
+} from '../../config/tos';
 
 type ArchiveModalProps = {
   open: boolean;
@@ -30,23 +45,48 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
   const [form] = Form.useForm();
   const { loading, guard, run, release } = useSubmitLock();
   const [connections, setConnections] = useState<TosConnectionPublic[]>([]);
-  const loaded = useRef(false);
+  const [jobs, setJobs] = useState<TosArchiveJobPublic[]>([]);
+  const connectionId = Form.useWatch('tos_connection_id', form);
+  const tosModel = Form.useWatch('tos_model', form);
+  const tosVersion = Form.useWatch('tos_version', form);
 
-  const loadConnections = () => {
-    if (loaded.current) {
+  useEffect(() => {
+    if (!open || !record?.id) {
       return;
     }
-    loaded.current = true;
-    queryTosConnections({ perPage: 100 })
-      .then((page) => setConnections(page.items || []))
-      .catch(() => {
-        loaded.current = false;
-      });
-  };
+    let cancelled = false;
+    listAllTosConnections()
+      .then((items) => {
+        if (!cancelled) {
+          setConnections(items);
+        }
+      })
+      .catch(() => undefined);
+    listAllTosArchives({ model_file_id: record.id })
+      .then((items) => {
+        if (!cancelled) {
+          setJobs(items);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, record?.id]);
+
+  const matchingJob = matchArchiveJob(jobs, {
+    connection_id: connectionId,
+    tos_model: tosModel,
+    tos_version: tosVersion
+  });
+  const mustRetry =
+    matchingJob?.state === 'error' ||
+    TosArchiveInFlight.includes(matchingJob?.state as any);
 
   const handleCancel = () => {
     form.resetFields();
-    loaded.current = false;
+    setJobs([]);
+    setConnections([]);
     onCancel();
   };
 
@@ -56,27 +96,55 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
     }
     try {
       await run(async () => {
-        const selected = values.paths?.length ? values.paths : null;
+        const existing = matchArchiveJob(jobs, {
+          connection_id: values.tos_connection_id,
+          tos_model: values.tos_model,
+          tos_version: values.tos_version
+        });
+        if (existing && existing.state === 'error') {
+          await retryTosArchive(existing.id);
+          return;
+        }
+        if (existing && TosArchiveInFlight.includes(existing.state as any)) {
+          const error = new Error('concurrent_version');
+          (error as any).data = {
+            details: { error_code: TosArchiveErrorCode.concurrent_version }
+          };
+          throw error;
+        }
         await createTosArchive({
           model_file_id: record.id,
           connection_id: values.tos_connection_id,
           tos_model: values.tos_model,
           tos_version: values.tos_version,
-          paths: relativeArchivePaths(record.resolved_paths || [], selected)
+          paths: relativeArchivePaths(
+            record.resolved_paths || [],
+            values.paths?.length ? values.paths : null
+          )
         });
       });
       showSuccess();
       handleCancel();
       onOk();
-    } catch {
+    } catch (error) {
+      if (readTosErrorCode(error) === TosArchiveErrorCode.concurrent_version) {
+        form.setFields([
+          {
+            name: 'tos_version',
+            errors: [
+              intl.formatMessage({ id: 'models.form.tos.archive.uniqueRetry' })
+            ]
+          }
+        ]);
+      }
       release();
     }
   };
 
-  const fileOptions = (record?.resolved_paths || []).map((path) => {
-    const name = path.split(/[\\/]/).pop() || path;
-    return { label: name, value: name };
-  });
+  const fileOptions = archiveFileOptionsFromResolved(
+    record?.resolved_paths || []
+  );
+  const retryable = pickRetryableArchiveJob(jobs);
 
   return (
     <FormDrawer
@@ -91,10 +159,24 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
         onFinish={handleFinish}
         preserve={false}
         initialValues={{
-          tos_model: record?.tos_model || record?.huggingface_repo_id,
-          tos_version: record?.tos_version
+          tos_connection_id: retryable?.connection_id,
+          tos_model:
+            retryable?.tos_model ||
+            record?.tos_model ||
+            record?.huggingface_repo_id,
+          tos_version: retryable?.tos_version || record?.tos_version
         }}
       >
+        {mustRetry ? (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={intl.formatMessage({
+              id: 'models.form.tos.archive.uniqueRetry'
+            })}
+          />
+        ) : null}
         <Form.Item
           name="tos_connection_id"
           rules={[
@@ -113,11 +195,6 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
               label: `${item.name} (${item.bucket}/${item.prefix || ''})`,
               value: item.id
             }))}
-            onOpenChange={(openSelect: boolean) => {
-              if (openSelect) {
-                loadConnections();
-              }
-            }}
           ></SealSelect>
         </Form.Item>
         <Form.Item
@@ -156,7 +233,10 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
           extra={
             <>
               {intl.formatMessage({
-                id: 'models.form.tos.archive.paths.tips'
+                id:
+                  fileOptions.length > 0
+                    ? 'models.form.tos.archive.paths.tips'
+                    : 'models.form.tos.archive.paths.directoryOnly'
               })}{' '}
               {intl.formatMessage({
                 id: 'models.form.tos.delete.remoteKeep'
@@ -167,6 +247,7 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
           <SealSelect
             mode="multiple"
             allowClear
+            disabled={!fileOptions.length}
             label={intl.formatMessage({ id: 'models.form.tos.archive.paths' })}
             options={fileOptions}
           ></SealSelect>

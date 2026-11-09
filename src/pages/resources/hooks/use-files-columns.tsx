@@ -2,9 +2,12 @@ import { tableSorter } from '@/config/settings';
 import { modelSourceMap } from '@/pages/llmodels/config';
 import { modelFileActions } from '@/pages/llmodels/config/button-actions';
 import {
+  canCreateTosArchive,
+  canRetryTosArchive,
   formatArtifactLocation,
   formatOriginSource,
-  TosArchiveInFlight
+  TosArchiveInFlight,
+  TosArchiveJobPublic
 } from '@/pages/llmodels/config/tos';
 import { usePluginListColumns } from '@/plugins/list-extra-columns';
 import { convertFileSize } from '@/utils';
@@ -28,7 +31,6 @@ import { useMemo } from 'react';
 import styled from 'styled-components';
 import {
   ModelFileArchiveState,
-  ModelFileArchiveStateMap,
   ModelfileState,
   ModelfileStateMap,
   ModelfileStateMapValue
@@ -109,17 +111,13 @@ const setActionList = (record: ListItem) => {
       return record.state === ModelfileStateMap.Ready && !record.is_lora;
     }
     if (item.key === 'archive') {
-      return (
-        record.state === ModelfileStateMap.Ready &&
-        !record.is_lora &&
-        !TosArchiveInFlight.includes(record.archive_state as any)
-      );
+      return canCreateTosArchive(record);
     }
     if (item.key === 'retry') {
       return record.state === ModelfileStateMap.Error;
     }
     if (item.key === 'retry-archive') {
-      return record.archive_state === ModelFileArchiveStateMap.error;
+      return canRetryTosArchive(record);
     }
     return true;
   });
@@ -155,7 +153,8 @@ const InstanceStatusTag = (props: { data: ListItem }) => {
   return (
     <StatusTag
       download={
-        data.state === ModelfileStateMap.Downloading
+        data.state === ModelfileStateMap.Downloading &&
+        typeof data.download_progress === 'number'
           ? { percent: data.download_progress }
           : undefined
       }
@@ -296,12 +295,40 @@ const getWorkerName = (
   return worker?.label || '';
 };
 
+const ArchiveStatusTag = (props: {
+  record: ListItem;
+  job?: TosArchiveJobPublic;
+}) => {
+  const { record, job } = props;
+  if (!record.archive_state) {
+    return <span className="text-tertiary">-</span>;
+  }
+  const inFlight = TosArchiveInFlight.includes(record.archive_state as any);
+  const progress =
+    inFlight && typeof job?.progress === 'number' ? job.progress : undefined;
+  return (
+    <StatusTag
+      download={progress === undefined ? undefined : { percent: progress }}
+      statusValue={{
+        status: ModelFileArchiveState[record.archive_state],
+        text: record.archive_state,
+        message:
+          job?.state_message ||
+          record.archive_error_message ||
+          record.archive_error_code ||
+          ''
+      }}
+    />
+  );
+};
+
 const useFilesColumns = (props: {
   handleSelect: (action: string, record: ListItem) => void;
   workersList: Global.BaseOption<number>[];
   sortOrder: string[];
+  archiveJobs?: Record<number, TosArchiveJobPublic>;
 }): ColumnsType<ListItem> => {
-  const { workersList, sortOrder, handleSelect } = props;
+  const { workersList, sortOrder, handleSelect, archiveJobs } = props;
   const intl = useIntl();
   const pluginCols = usePluginListColumns('modelFiles');
 
@@ -390,23 +417,9 @@ const useFilesColumns = (props: {
         title: intl.formatMessage({ id: 'models.table.archiveStatus' }),
         dataIndex: 'archive_state',
         width: 160,
-        render: (_text: string, record: ListItem) => {
-          if (!record.archive_state) {
-            return <span className="text-tertiary">-</span>;
-          }
-          return (
-            <StatusTag
-              statusValue={{
-                status: ModelFileArchiveState[record.archive_state],
-                text: record.archive_state,
-                message:
-                  record.archive_error_message ||
-                  record.archive_error_code ||
-                  ''
-              }}
-            />
-          );
-        }
+        render: (_text: string, record: ListItem) => (
+          <ArchiveStatusTag record={record} job={archiveJobs?.[record.id]} />
+        )
       },
       {
         title: intl.formatMessage({ id: 'resources.modelfiles.form.path' }),
@@ -463,7 +476,7 @@ const useFilesColumns = (props: {
         )
       }
     ];
-  }, [intl, workersList, handleSelect, pluginCols]);
+  }, [intl, workersList, handleSelect, pluginCols, archiveJobs]);
 };
 
 export default useFilesColumns;

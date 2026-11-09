@@ -179,9 +179,11 @@ export default {
     'Yalnızca sunucu yerel ingest (POST /v2/tos/releases). Worker önbelleğini arşivlemez. Kimlik bilgileri sunucu TOS_* değişkenlerindedir — anahtar girmeyin.',
   'models.form.tos.connection': 'TOS bağlantısı',
   'models.form.tos.version.unverified':
-    'Bu sürüm bağlantı kataloğunda yok. Açık sürümü doğrulayın veya listeden seçin.',
+    'GET /tos/releases/detail bu sürümü doğrulayamadı. Bağlantı, model ve açık sürümü kontrol edin.',
+  'models.form.tos.version.verifyFailed':
+    'Geçerli bağlantı/model/sürüm için TOS sürümü doğrulanamadı. Katalogda olması yetmez; detail başarılı olduktan sonra yeniden deneyin.',
   'models.form.tos.version.immutable':
-    'Sürüm açık ve değişmez. Aynı bağlantı, model ve sürüm 409 concurrent_version döner.',
+    'Sürüm açık ve değişmez. Aynı bağlantı, model ve sürüm 409 concurrent_version döner. ERROR işini retry edin, yeni arşiv oluşturmayın.',
   'models.form.tos.autoarchive': 'İndirmeden sonra TOS’a arşivle',
   'models.form.tos.autoarchive.tips':
     'Varsayılan kapalı. Arşiv durumu indirmeden bağımsızdır; arşiv hatası indirmeyi başarısız göstermez.',
@@ -189,22 +191,28 @@ export default {
   'models.form.tos.archive.title': 'TOS’a arşivle',
   'models.form.tos.archive.paths': 'Dosyalar',
   'models.form.tos.archive.paths.tips':
-    'Boş bırakılırsa tüm READY dizin arşivlenir. Göreli dosya seçerek alt küme (ör. tek GGUF) arşivleyin.',
+    'Boş bırakılırsa tüm READY dizin arşivlenir. READY dosya listesinden göreli yollar seçin (iç içe GGUF dahil). Mutlak yollar reddedilir.',
+  'models.form.tos.archive.paths.directoryOnly':
+    'Bu READY önbelleğinin resolved_paths değeri yalnızca dizin; içindeki dosyalar seçilemez. Tüm dizini arşivleyin veya göreli dosya listesi API’sini bekleyin. Basename veya mutlak yol yazmayın.',
+  'models.form.tos.archive.uniqueRetry':
+    'Bu bağlantı/model/sürüm için zaten bir arşiv işi var. Yenisini oluşturmayın, o işi yeniden deneyin (409 concurrent_version).',
   'models.form.tos.release.required':
     'Katalogdan model ve açık sürüm seçin. Yalnızca tos_* yazmak sürüm seçimi sayılmaz.',
   'models.form.tos.prefix': 'Önek',
   'models.form.tos.credentialMode': 'Kimlik bilgisi modu',
   'models.form.tos.credentialMode.inline': 'Access key / secret key',
-  'models.form.tos.credentialMode.env': 'Worker ortamı (TOS_*)',
+  'models.form.tos.credentialMode.env':
+    'Ortam (kontrol düzlemi ve worker TOS_*)',
   'models.form.tos.accessKey': 'Access key',
   'models.form.tos.secretKey': 'Secret key',
   'models.form.tos.securityToken': 'Security token',
   'models.form.tos.credentialRef': 'Kimlik bilgisi referansı',
-  'models.form.tos.secret.placeholder': 'Kayıtlı sırrı korumak için boş bırakın',
+  'models.form.tos.secret.placeholder':
+    'Kayıtlı sırrı korumak için boş bırakın',
   'models.form.tos.secret.tips':
     'Yalnızca yazılır. Okuma maskelenmiş access key döner, secret asla dönmez. Sırlar tarayıcıya veya günlüğe yazılmaz.',
   'models.form.tos.env.endpoint.tips':
-    'env modu atanan worker üzerindeki TOS_ACCESS_KEY / TOS_SECRET_KEY kullanır. Worker TOS_ENDPOINT veya TOS_ALLOWED_ENDPOINTS değerini bu bağlantıyla aynı HTTPS ana makineye ayarlamalıdır; aksi halde transport reddedilir. Bu denetimi atlamayın.',
+    'env modu yalnızca credential_ref=env kaydeder. Catalog (kontrol düzlemi) ve worker pull şu an güvenilir endpoint’i ayrı çözer; backend birleştiriyor. Catalog, indirme ve arşivi sunan süreçlerde TOS_ACCESS_KEY, TOS_SECRET_KEY ve TOS_ENDPOINT veya TOS_ALLOWED_ENDPOINTS değerlerini hizalayın. Worker transport host uyuşmazlığını reddeder. Yalnızca worker env, catalog veya pull’un çalışacağını garanti etmez.',
   'models.form.tos.connections.title': 'TOS bağlantısı',
   'models.form.tos.connections.create': 'TOS bağlantısı ekle',
   'models.form.tos.connections.edit': 'TOS bağlantısını düzenle',
