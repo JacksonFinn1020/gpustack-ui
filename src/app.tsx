@@ -13,6 +13,7 @@ import { isPluginPublicPage } from '@/plugins/public-routes';
 import { requestConfig } from '@/request-config';
 import {
   queryCurrentUserState,
+  queryMyOrganizations,
   queryVersionInfo,
   updateCheck
 } from '@/services/profile/apis';
@@ -23,6 +24,10 @@ import {
   probeAccessFlags
 } from '@/utils/access-probes';
 import { installTenantFetch } from '@/utils/install-fetch';
+import {
+  getOrgAccessSnapshot,
+  persistMyOrganizations
+} from '@/utils/org-context';
 import {
   IS_FIRST_LOGIN,
   readState,
@@ -139,6 +144,13 @@ export async function getInitialState(): Promise<{
         // caller commits this user to `initialState`. Errors here are
         // swallowed and logged — fetchUserInfo must still return.
         try {
+          const memberships = await queryMyOrganizations();
+          persistMyOrganizations(Array.isArray(memberships) ? memberships : []);
+        } catch (err) {
+          persistMyOrganizations([]);
+          console.error('queryMyOrganizations error:', err);
+        }
+        try {
           await getGPUStackPlugin()?.login?.onUserFetched?.(data, {
             request: umiRequest
           });
@@ -150,9 +162,12 @@ export async function getInitialState(): Promise<{
           getUpdateCheck();
           fetchSystemConfig();
         }
+      } else {
+        persistMyOrganizations([]);
       }
       return data;
     } catch (error: any) {
+      persistMyOrganizations([]);
       const data = error?.response?.data;
       if (data?.code === 401 && data?.message.includes('deactivate')) {
         message.error({
@@ -220,6 +235,7 @@ export async function getInitialState(): Promise<{
       fetchUserInfo,
       currentUser: userInfo,
       pluginData,
+      ...getOrgAccessSnapshot(),
       ...accessFlags
     };
   }

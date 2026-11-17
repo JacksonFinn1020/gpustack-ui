@@ -1,5 +1,6 @@
 import LogoIcon from '@/assets/images/gpustack-logo.png';
 import { userAtom } from '@/atoms/user';
+import { getOrgAccessSnapshot } from '@/utils/org-context';
 import { history, useIntl, useModel } from '@umijs/max';
 import { Button, Divider, Form, Spin, message } from 'antd';
 import { createStyles } from 'antd-style';
@@ -125,7 +126,8 @@ const LoginForm = () => {
       flushSync(() => {
         setInitialState((s: any) => ({
           ...s,
-          currentUser: userInfo
+          currentUser: userInfo,
+          ...getOrgAccessSnapshot()
         }));
       });
     }

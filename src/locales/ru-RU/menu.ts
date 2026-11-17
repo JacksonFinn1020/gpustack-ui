@@ -35,6 +35,7 @@ export default {
   'menu.resources.workers': 'Worker',
   'menu.resources.gpus': 'GPUs',
   'menu.models.modelfiles': 'Файлы моделей',
+  'menu.models.tosConnections': 'Подключения TOS',
   'menu.accessControl': 'Управление доступом',
   'menu.accessControl.apikeys': 'API-ключи',
   'menu.accessControl.users': 'Пользователи',

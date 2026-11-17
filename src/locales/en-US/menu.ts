@@ -29,6 +29,7 @@ export default {
   'menu.resources.workers': 'Workers',
   'menu.resources.gpus': 'GPUs',
   'menu.models.modelfiles': 'Model Files',
+  'menu.models.tosConnections': 'TOS Connections',
   'menu.accessControl': 'Access Control',
   'menu.accessControl.apikeys': 'API Keys',
   'menu.accessControl.users': 'Users',

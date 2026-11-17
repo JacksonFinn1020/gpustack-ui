@@ -12,6 +12,7 @@ import useUserSettings from '@/hooks/use-user-settings';
 import useUserSettingsStorage from '@/hooks/use-user-settings-storage';
 import { getGPUStackPlugin } from '@/plugins';
 import { getDocumentationUrl } from '@/utils/documentation';
+import { getOrgAccessSnapshot } from '@/utils/org-context';
 import {
   CRYPT_TEXT,
   IS_FIRST_LOGIN,
@@ -140,7 +141,8 @@ const Login = () => {
     if (!initialState?.currentUser) {
       setInitialState((preState: any) => ({
         ...preState,
-        currentUser: info
+        currentUser: info,
+        ...getOrgAccessSnapshot()
       }));
     }
   };
@@ -155,7 +157,8 @@ const Login = () => {
       flushSync(() => {
         setInitialState((s: any) => ({
           ...s,
-          currentUser: info
+          currentUser: info,
+          ...getOrgAccessSnapshot()
         }));
       });
     }

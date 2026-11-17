@@ -92,6 +92,18 @@ declare namespace Global {
   interface InitialStateType {
     fetchUserInfo: () => Promise<UserInfo>;
     currentUser?: UserInfo;
+    myOrganizations?: Array<{
+      organization: {
+        id: number;
+        name?: string | null;
+        display_name?: string | null;
+        is_personal?: boolean;
+        is_platform?: boolean;
+      };
+      role?: string | null;
+    }>;
+    currentOrganizationId?: number | null;
+    actingOrganizationId?: number | null;
     // Captured at app boot so access predicates can gate GPU Service —
     // the feature is Kubernetes-only, and Org members without a K8s
     // cluster they can schedule on shouldn't see the menu. Refreshed

@@ -6,6 +6,11 @@ import { omit } from 'lodash';
 import qs from 'query-string';
 import { MODEL_ROUTES } from '../../model-routes/apis';
 import {
+  TosIngestRequest,
+  TosIngestResponse,
+  TosSourcesResponse
+} from '../config/tos';
+import {
   AccessControlFormData,
   BackendItem,
   CatalogItem,
@@ -96,6 +101,24 @@ export async function createModel(params: { data: FormData }) {
   return request(`${MODELS_API}`, {
     method: 'POST',
     data: params.data
+  });
+}
+
+export const TOS_SOURCES_API = '/tos/sources';
+
+export const TOS_RELEASES_API = '/tos/releases';
+
+export async function queryTosSources() {
+  return request<TosSourcesResponse>(TOS_SOURCES_API, {
+    method: 'GET',
+    skipErrorHandler: true
+  });
+}
+
+export async function ingestTosRelease(data: TosIngestRequest) {
+  return request<TosIngestResponse>(TOS_RELEASES_API, {
+    method: 'POST',
+    data
   });
 }
 

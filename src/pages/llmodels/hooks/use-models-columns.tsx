@@ -41,6 +41,7 @@ import {
   MyModelsStatusValueMap
 } from '../config';
 import { generateSource } from '../config/button-actions';
+import { formatArtifactLocation, formatOriginSource } from '../config/tos';
 import { ListItem, RoleSpec } from '../config/types';
 import {
   canPauseDeployment,
@@ -359,6 +360,28 @@ const useModelsColumns = ({
           <span className="flex flex-column" style={{ width: '100%' }}>
             <AutoTooltip ghost>{generateSource(record)}</AutoTooltip>
           </span>
+        )
+      },
+      {
+        title: intl.formatMessage({ id: 'models.table.origin' }),
+        dataIndex: 'origin',
+        key: 'origin',
+        span: 2,
+        render: (_text: string, record: ListItem) => (
+          <AutoTooltip ghost>{formatOriginSource(record)}</AutoTooltip>
+        )
+      },
+      {
+        title: intl.formatMessage({ id: 'models.table.artifact' }),
+        dataIndex: 'artifact',
+        key: 'artifact',
+        span: 2,
+        render: (_text: string, record: ListItem) => (
+          <AutoTooltip ghost>
+            {record.tos_model || record.provenance?.artifact_uri
+              ? formatArtifactLocation(record)
+              : '-'}
+          </AutoTooltip>
         )
       },
       {

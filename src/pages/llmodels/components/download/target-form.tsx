@@ -19,7 +19,10 @@ import React, {
   useRef
 } from 'react';
 import { localPathTipsList, modelSourceMap, sourceOptions } from '../../config';
+import { hasVerifiedTosRelease } from '../../config/tos';
 import { useGenerateWorkersModelFileOptions } from '../../hooks';
+import AutoArchiveFields from '../tos/auto-archive-fields';
+import ReleasePicker from '../tos/release-picker';
 
 type EmptyObject = Record<never, never>;
 
@@ -102,7 +105,21 @@ const TargetForm: React.FC<TargetFormProps> = forwardRef((props, ref) => {
   }));
 
   const handleOk = (values: any) => {
-    const data = _.pickBy(values, (val: string) => val);
+    if (source === modelSourceMap.tos_value && !hasVerifiedTosRelease(values)) {
+      form.setFields([
+        {
+          name: 'tos_release_verified',
+          errors: [
+            intl.formatMessage({ id: 'models.form.tos.release.required' })
+          ]
+        }
+      ]);
+      return;
+    }
+    const data = _.pickBy(
+      values,
+      (val: unknown) => val !== undefined && val !== ''
+    );
     onOk({
       ...data,
       worker_id: data.worker_id?.[1]
@@ -177,7 +194,9 @@ const TargetForm: React.FC<TargetFormProps> = forwardRef((props, ref) => {
     if (props.source === modelSourceMap.local_path_value) {
       return renderLocalPathFields();
     }
-
+    if (props.source === modelSourceMap.tos_value) {
+      return <ReleasePicker></ReleasePicker>;
+    }
     return null;
   }, [props.source, intl]);
 
@@ -279,6 +298,10 @@ const TargetForm: React.FC<TargetFormProps> = forwardRef((props, ref) => {
               })}
             ></CInput.Input>
           </Form.Item>
+        )}
+        {(source === modelSourceMap.huggingface_value ||
+          source === modelSourceMap.modelscope_value) && (
+          <AutoArchiveFields></AutoArchiveFields>
         )}
       </Form>
     </div>

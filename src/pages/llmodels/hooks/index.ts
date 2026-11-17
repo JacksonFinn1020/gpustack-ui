@@ -10,6 +10,11 @@ import { useEffect, useRef, useState } from 'react';
 import { evaluationsModelSpec } from '../apis';
 import { modelSourceMap, modelTaskMap, RoleLabelMap } from '../config';
 import {
+  hasVerifiedTosRelease,
+  isTosGguf,
+  stripTosUiFields
+} from '../config/tos';
+import {
   EvaluateResult,
   FormData,
   RoleResourceClaim,
@@ -236,17 +241,19 @@ export const useCheckCompatibility = () => {
               // scaling_schedule has no bearing on resource/compatibility
               // evaluation; drop it so in-progress (possibly incomplete) rules
               // never fail the evaluate request.
-              ..._.omit(data, [
-                'scheduleType',
-                'manualGpuMode',
-                'scaling_schedule',
-                // Assembled below instead of passed through: a role is held in
-                // FORM shape — the override switches, the router's managed
-                // flag, and GPU ids still in the cascader's [worker, gpu]
-                // pairs — which the API's `List[str]` rejects outright, so
-                // sending it raw 422s the whole evaluation.
-                'roles'
-              ]),
+              ...stripTosUiFields(
+                _.omit(data, [
+                  'scheduleType',
+                  'manualGpuMode',
+                  'scaling_schedule',
+                  // Assembled below instead of passed through: a role is held in
+                  // FORM shape — the override switches, the router's managed
+                  // flag, and GPU ids still in the cascader's [worker, gpu]
+                  // pairs — which the API's `List[str]` rejects outright, so
+                  // sending it raw 422s the whole evaluation.
+                  'roles'
+                ])
+              ),
               // 🔴 The roles are what make this a PD evaluation, and they used
               // to be dropped here along with the form-only keys above. With
               // them gone the server had no way to know it was pricing a
@@ -591,7 +598,8 @@ export const useCheckCompatibility = () => {
       isGGUFFile ||
       isOllamaModelFile ||
       allValues?.huggingface_filename?.endsWith?.('.gguf') ||
-      allValues?.model_scope_file_path?.endsWith?.('.gguf')
+      allValues?.model_scope_file_path?.endsWith?.('.gguf') ||
+      isTosGguf(allValues)
     );
   };
 
@@ -669,6 +677,8 @@ export const useCheckCompatibility = () => {
         return !allValues.ollama_library_model_name;
       case modelSourceMap.local_path_value:
         return !allValues.local_path;
+      case modelSourceMap.tos_value:
+        return !hasVerifiedTosRelease(allValues);
       default:
         return false;
     }
